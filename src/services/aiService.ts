@@ -98,7 +98,88 @@ export function resolveLocalDirectAnswer(
   const text = (message || '').trim().toLowerCase();
   const isHi = language === 'hi';
 
-  // 1. Medicine schedule queries: "मेरी दवा कब है?", "दवा कब लेनी है", "when is my medicine", "next medicine", "show my medicine reminders"
+  // 1. "आज मेरा क्या काम है?", "aaj mera kya kaam hai", "what tasks do i have today", "today summary", "आज का काम"
+  const isTodayTasksQuery =
+    text.includes('आज मेरा क्या काम है') ||
+    text.includes('आज क्या काम है') ||
+    text.includes('aaj mera kya kaam') ||
+    text.includes('aaj kya kaam') ||
+    text.includes('what are my tasks today') ||
+    text.includes('what tasks do i have today') ||
+    text.includes("today's schedule") ||
+    text.includes('आज का सारांश') ||
+    text.includes('today summary') ||
+    text.includes('आज की योजना');
+
+  if (isTodayTasksQuery) {
+    const pendingMeds = (context?.medicines || []).filter((m) => m.status === 'pending');
+    const upcomingApp = (context?.appointments || [])[0];
+
+    const medText = pendingMeds.length > 0
+      ? (isHi ? `💊 ${pendingMeds.length} दवाइयाँ बाकी हैं (${pendingMeds[0].name} - ${pendingMeds[0].time})` : `💊 ${pendingMeds.length} medicine(s) pending (${pendingMeds[0].name} at ${pendingMeds[0].time})`)
+      : (isHi ? `💊 सभी दवाइयाँ पूरी हैं` : `💊 All medicines completed`);
+
+    const appText = upcomingApp
+      ? (isHi ? `📅 डॉक्टर अपॉइंटमेंट: ${upcomingApp.doctorOrService} (${upcomingApp.date}, ${upcomingApp.time})` : `📅 Appointment: ${upcomingApp.doctorOrService} (${upcomingApp.date}, ${upcomingApp.time})`)
+      : (isHi ? `📅 आज कोई नई डॉक्टर अपॉइंटमेंट नहीं है` : `📅 No appointment today`);
+
+    return {
+      reply: isHi
+        ? `🌞 आज का Saathi Summary:\n${medText}\n${appText}\n🛡️ सुरक्षा नियम: अपना बैंक OTP/PIN किसी के साथ साझा न करें।`
+        : `🌞 Today's Saathi Summary:\n${medText}\n${appText}\n🛡️ Safety Rule: Never share your bank OTP or PIN with anyone.`,
+      steps: isHi
+        ? [
+            'अपनी दवाइयाँ समय पर लें और साथी में "ले ली" मार्क करें।',
+            upcomingApp ? 'डॉक्टर विजिट की तैयारी के लिए अपॉइंटमेंट चेकलिस्ट देखें।' : 'आज के दिन को शांति से बिताएं।',
+            'किसी भी संदिग्ध फोन कॉल या SMS पर विश्वास न करें।',
+          ]
+        : [
+            'Take scheduled medicines on time and mark as taken.',
+            upcomingApp ? 'Review your doctor visit checklist before leaving.' : 'Have a peaceful and restful day.',
+            'Never share OTP or banking passwords on unknown phone calls.',
+          ],
+      suggestedAction: upcomingApp ? 'open_appointment' : 'open_medicine',
+      source: 'local-companion',
+    };
+  }
+
+  // 2. Doctor visit preparation query: "कल डॉक्टर के पास जाना है, मुझे क्या तैयारी करनी चाहिए?", "doctor ki taiyari", "doctor checklist"
+  const isDoctorPrepQuery =
+    text.includes('डॉक्टर के पास जाना है') ||
+    text.includes('क्या तैयारी करनी चाहिए') ||
+    text.includes('doctor ki taiyari') ||
+    text.includes('doctor ke paas jana hai') ||
+    text.includes('doctor preparation') ||
+    text.includes('doctor checklist') ||
+    text.includes('डॉक्टर के लिए तैयारी') ||
+    text.includes('doctor visit prep');
+
+  if (isDoctorPrepQuery) {
+    return {
+      reply: isHi
+        ? '🩺 डॉक्टर से मिलने से पहले यह 5-सूत्री चेकलिस्ट पूरी करें ताकि आपकी जांच सुचारू रूप से हो सके:'
+        : '🩺 Follow this 5-point checklist before visiting your doctor to ensure a smooth, organized visit:',
+      steps: isHi
+        ? [
+            '1. अपनी वर्तमान दवाइयों की सूची साथ रखें।',
+            '2. पुराने मेडिकल reports और prescription documents साथ रखें।',
+            '3. अपनी मुख्य समस्या व लक्षण स्पष्ट रूप से लिख लें।',
+            '4. डॉक्टर से अपनी दवाओं के उद्देश्य और अवधि के बारे में पूछें।',
+            '5. अगली appointment और जरूरी जांच की तारीख पूछ लें।',
+          ]
+        : [
+            '1. Keep your current medicine list ready.',
+            '2. Keep previous medical reports & test documents ready.',
+            '3. Write down your primary concern or symptoms.',
+            '4. Ask the doctor about the purpose of your medications.',
+            '5. Clarify the follow-up appointment date & next steps.',
+          ],
+      suggestedAction: 'open_appointment',
+      source: 'local-companion',
+    };
+  }
+
+  // 3. Medicine schedule queries: "मेरी दवा कब है?", "दवा कब लेनी है", "when is my medicine", "next medicine", "show my medicine reminders"
   const isMedicineScheduleQuery =
     text.includes('दवा कब') ||
     text.includes('दवाई कब') ||

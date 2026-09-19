@@ -450,6 +450,16 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
             );
           })}
         </div>
+
+        {/* Safe Medicine Disclaimer */}
+        <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300 text-slate-800 text-xs font-semibold leading-relaxed flex items-start gap-2.5">
+          <span className="text-base shrink-0">⚠️</span>
+          <p>
+            {isHindi
+              ? 'महत्वपूर्ण सुरक्षा सूचना: साथी केवल आपके समय-सारणी और दवा लेने की याद दिलाने के लिए है। साथी कोई चिकित्सीय सलाह नहीं देता और न ही दवा की खुराक बदलता है। दवा या खुराक में किसी भी बदलाव के लिए हमेशा अपने डॉक्टर या फार्मासिस्ट से परामर्श करें।'
+              : 'Important Safety Notice: Saathi is an organizational schedule reminder tool only. It never prescribes medications or alters dosages. Always consult your qualified doctor or pharmacist for medical advice and prescriptions.'}
+          </p>
+        </div>
       </div>
     </div>
   );

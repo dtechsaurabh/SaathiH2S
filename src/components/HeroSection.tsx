@@ -58,8 +58,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </h2>
           <p className="text-lg sm:text-xl font-extrabold text-amber-800 max-w-2xl mx-auto leading-snug">
             {isHindi
-              ? 'रोज़मर्रा के digital काम आसान, सुरक्षित और समझने योग्य बनाने में आपकी मदद।'
-              : 'Helping you make everyday digital tasks simple, safe, and easy to understand.'}
+              ? 'रोज़मर्रा के digital काम आसान, सुरक्षित और तनावमुक्त बनाने के लिए आपका भरोसेमंद साथी।'
+              : 'Your trusted companion to make everyday digital tasks simple, safe, and stress-free.'}
           </p>
         </div>
 

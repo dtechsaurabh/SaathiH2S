@@ -168,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setLanguage('hi')}
               aria-pressed={language === 'hi'}
               aria-label="हिन्दी (Hindi)"
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all min-h-[36px] ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all min-h-[40px] min-w-[44px] flex items-center justify-center ${
                 language === 'hi'
                   ? 'bg-amber-600 text-white shadow-2xs'
                   : highContrast
@@ -184,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setLanguage('en')}
               aria-pressed={language === 'en'}
               aria-label="English"
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all min-h-[36px] ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all min-h-[40px] min-w-[44px] flex items-center justify-center ${
                 language === 'en'
                   ? 'bg-amber-600 text-white shadow-2xs'
                   : highContrast

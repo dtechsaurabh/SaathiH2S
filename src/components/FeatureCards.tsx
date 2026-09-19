@@ -29,50 +29,55 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({
       id: 'medicine' as const,
       icon: <Pill className="w-8 h-8 text-amber-700" />,
       emoji: '💊',
-      title: isHindi ? 'दवाइयाँ याद रखें' : 'Remember Medicines',
-      description: isHindi ? 'दवाइयों का समय, खुराक और ट्रैकिंग' : 'Medicine timings, doses & daily tracking',
-      bgClass: 'bg-amber-50/70 hover:bg-amber-100/80 border-amber-300',
-      tagColor: 'text-amber-800 bg-amber-100',
+      title: isHindi ? '💊 मेरी दवाइयाँ' : '💊 My Medicines',
+      subtitle: isHindi ? 'दवाइयों का समय, खुराक और ट्रैकिंग' : 'Medicine timings, doses & daily tracking',
+      secondaryLabel: isHindi ? 'My Medicines' : 'Schedule & Tracker',
+      bgClass: 'bg-amber-50 hover:bg-amber-100/90 border-amber-300',
+      tagColor: 'text-amber-900 bg-amber-100',
       action: () => onSelectFeature('medicine'),
     },
     {
       id: 'doctor' as const,
       icon: <Stethoscope className="w-8 h-8 text-emerald-700" />,
-      emoji: '🩺',
-      title: isHindi ? 'Appointment संभालें' : 'Manage Appointments',
-      description: isHindi ? 'डॉक्टर विजिट, चेकलिस्ट व पूछने वाले सवाल' : 'Doctor visits, questions & prep checklist',
-      bgClass: 'bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-300',
-      tagColor: 'text-emerald-800 bg-emerald-100',
+      emoji: '📅',
+      title: isHindi ? '📅 अपॉइंटमेंट' : '📅 Appointments',
+      subtitle: isHindi ? 'डॉक्टर विजिट, चेकलिस्ट व पूछने वाले सवाल' : 'Doctor visits, checklist & prep questions',
+      secondaryLabel: isHindi ? 'Appointments' : 'Doctor Visits & Prep',
+      bgClass: 'bg-emerald-50 hover:bg-emerald-100/90 border-emerald-300',
+      tagColor: 'text-emerald-900 bg-emerald-100',
       action: () => onSelectFeature('doctor'),
     },
     {
       id: 'scam' as const,
       icon: <ShieldAlert className="w-8 h-8 text-rose-700" />,
-      emoji: '🚨',
-      title: isHindi ? 'संदिग्ध message समझें' : 'Check Suspicious Messages',
-      description: isHindi ? 'धोखाधड़ी, फर्जी बिजली बिल व बैंक SMS की जांच' : 'Detect fake bills, KYC threats & scam SMS',
-      bgClass: 'bg-rose-50/70 hover:bg-rose-100/80 border-rose-300',
-      tagColor: 'text-rose-800 bg-rose-100',
+      emoji: '🛡️',
+      title: isHindi ? '🛡️ Scam Check' : '🛡️ Scam Check',
+      subtitle: isHindi ? 'धोखाधड़ी, फर्जी बिजली बिल व बैंक SMS की जांच' : 'Check fake bills, KYC threats & suspicious SMS',
+      secondaryLabel: isHindi ? 'Scam & Fraud Check' : 'Cyber Safety 1930',
+      bgClass: 'bg-rose-50 hover:bg-rose-100/90 border-rose-300',
+      tagColor: 'text-rose-900 bg-rose-100',
       action: () => onSelectFeature('scam'),
     },
     {
       id: 'document' as const,
       icon: <FileText className="w-8 h-8 text-purple-700" />,
       emoji: '📄',
-      title: isHindi ? 'मुश्किल जानकारी आसान करें' : 'Simplify Difficult Info',
-      description: isHindi ? 'पेंशन, सरकारी नोटिस व अस्पताल बिल सरल शब्दों में' : 'Simplify pension, legal & hospital notices',
-      bgClass: 'bg-purple-50/70 hover:bg-purple-100/80 border-purple-300',
-      tagColor: 'text-purple-800 bg-purple-100',
+      title: isHindi ? '📄 दस्तावेज़ समझें' : '📄 Explain Documents',
+      subtitle: isHindi ? 'पेंशन, सरकारी नोटिस व अस्पताल बिल सरल शब्दों में' : 'Simplify pension, legal & hospital notices',
+      secondaryLabel: isHindi ? 'Document Explainer' : 'Read & Understand',
+      bgClass: 'bg-purple-50 hover:bg-purple-100/90 border-purple-300',
+      tagColor: 'text-purple-900 bg-purple-100',
       action: () => onSelectFeature('document'),
     },
     {
       id: 'voice' as const,
       icon: <Mic className="w-8 h-8 text-sky-700" />,
-      emoji: '🤝',
-      title: isHindi ? 'हर कदम पर आसान guidance पाएँ' : 'Step-by-Step Guidance',
-      description: isHindi ? 'बोलकर या लिखकर शांत व सुरक्षित डिजिटल सहायता' : 'Speak or type for calm digital assistance',
-      bgClass: 'bg-sky-50/70 hover:bg-sky-100/80 border-sky-300',
-      tagColor: 'text-sky-800 bg-sky-100',
+      emoji: '🤖',
+      title: isHindi ? '🤖 AI Companion' : '🤖 AI Companion',
+      subtitle: isHindi ? 'बोलकर या लिखकर शांत व सुरक्षित डिजिटल सहायता' : 'Speak or type for calm, respectful assistance',
+      secondaryLabel: isHindi ? 'Talk & Chat with Saathi' : 'Voice & Chat Helper',
+      bgClass: 'bg-sky-50 hover:bg-sky-100/90 border-sky-300',
+      tagColor: 'text-sky-900 bg-sky-100',
       action: () => {
         if (onOpenVoiceModal) {
           onOpenVoiceModal();
@@ -117,16 +122,23 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({
                 </div>
                 <span className="text-xl shrink-0">{act.emoji}</span>
               </div>
-              <h4 className="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-amber-800 transition-colors">
-                {act.title}
-              </h4>
-              <p className="text-xs sm:text-sm font-semibold text-slate-600 mt-1 leading-normal">
-                {act.description}
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-amber-800 transition-colors">
+                  {act.title}
+                </h4>
+                {act.secondaryLabel && (
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 ${act.tagColor}`}>
+                    {act.secondaryLabel}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs sm:text-sm font-semibold text-slate-600 mt-1.5 leading-normal">
+                {act.subtitle}
               </p>
             </div>
 
             <div className="pt-3 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs font-bold text-slate-700">
-              <span>{isHindi ? 'शुरू करें' : 'Open'}</span>
+              <span>{isHindi ? 'खोलें (Tap to Open)' : 'Open Tool'}</span>
               <ArrowRight className="w-4 h-4 text-amber-700 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>

@@ -31,7 +31,24 @@ interface AppointmentModalProps {
   onUpdateAppointments: (appointments: AppointmentItem[]) => void;
   onResetDemo: () => void;
   onSetReminder?: (reminder: ReminderItem) => void;
+  initialPrepareAppId?: string | null;
 }
+
+const DEFAULT_DOCTOR_CHECKLIST = [
+  { id: 'med_list', hi: 'अपनी दवाइयों की सूची साथ रखें', en: 'Keep your current medicine list ready' },
+  { id: 'old_reports', hi: 'पुराने reports/documents साथ रखें', en: 'Keep previous medical reports & test documents ready' },
+  { id: 'main_issue', hi: 'अपनी मुख्य समस्या/सवाल लिख लें', en: 'Write down your primary concern or symptoms' },
+  { id: 'ask_meds', hi: 'डॉक्टर से अपनी दवाओं के बारे में पूछें', en: 'Ask the doctor about your current medications' },
+  { id: 'next_visit', hi: 'अगली appointment/date पूछें', en: 'Clarify the follow-up appointment date & next steps' },
+];
+
+const DEFAULT_DOCTOR_QUESTIONS = [
+  { hi: 'मेरी समस्या के बारे में आपकी क्या सलाह है?', en: 'What is your recommendation regarding my current concern?' },
+  { hi: 'इस दवा का उद्देश्य क्या है?', en: 'What is the purpose and expected outcome of this medication?' },
+  { hi: 'मुझे किन बातों पर ध्यान देना चाहिए?', en: 'Are there any precautions or warning signs I should watch out for?' },
+  { hi: 'अगली बार कब मिलना चाहिए?', en: 'When should I schedule my next follow-up visit?' },
+  { hi: 'कौन-सी जानकारी या report साथ लानी चाहिए?', en: 'Which tests or documents should I bring for the next visit?' },
+];
 
 export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   isOpen,
@@ -42,6 +59,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   onUpdateAppointments,
   onResetDemo,
   onSetReminder,
+  initialPrepareAppId,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAppId, setEditingAppId] = useState<string | null>(null);
@@ -51,8 +69,39 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [prepError, setPrepError] = useState<string | null>(null);
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
   const [deleteConfirmAppId, setDeleteConfirmAppId] = useState<string | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('saathi_doctor_checklist_items');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const notificationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSubmittingRef = useRef(false);
+
+  // Toggle checklist item and persist in localStorage
+  const toggleChecklistItem = (key: string) => {
+    setCheckedItems((prev) => {
+      const updated = { ...prev, [key]: !prev[key] };
+      try {
+        localStorage.setItem('saathi_doctor_checklist_items', JSON.stringify(updated));
+      } catch {
+        // ignore storage quota errors
+      }
+      return updated;
+    });
+  };
+
+  // If initialPrepareAppId is provided, open that appointment's checklist automatically
+  useEffect(() => {
+    if (isOpen && initialPrepareAppId) {
+      const target = appointments.find((a) => a.id === initialPrepareAppId);
+      if (target) {
+        setSelectedAppId(target.id);
+      }
+    }
+  }, [isOpen, initialPrepareAppId, appointments]);
 
   // Keyboard Escape listener
   useEffect(() => {
@@ -580,15 +629,15 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                   {!isDeleting && (
                     <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {/* 1. विवरण (Details / AI Prep) */}
+                        {/* 1. डॉक्टर के लिए तैयारी करें (Prepare for Doctor Visit) */}
                         <button
                           type="button"
                           onClick={() => handlePrepareAppointment(app)}
-                          aria-label={isSelected ? (isHindi ? `${app.doctorOrService} तैयारी विवरण बंद करें` : `Hide details for ${app.doctorOrService}`) : (isHindi ? `${app.doctorOrService} तैयारी विवरण देखें` : `View details and prep for ${app.doctorOrService}`)}
-                          className="px-3.5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-sky-400"
+                          aria-label={isSelected ? (isHindi ? `${app.doctorOrService} तैयारी विवरण बंद करें` : `Hide checklist for ${app.doctorOrService}`) : (isHindi ? `${app.doctorOrService} डॉक्टर के लिए तैयारी करें` : `Prepare checklist for ${app.doctorOrService}`)}
+                          className="px-3.5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-xs min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-sky-400"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>{isSelected ? (isHindi ? 'विवरण बंद करें' : 'Hide Details') : (isHindi ? 'विवरण' : 'Details')}</span>
+                          <span>{isSelected ? (isHindi ? 'तैयारी सूची बंद करें' : 'Hide Checklist') : (isHindi ? '📋 डॉक्टर के लिए तैयारी करें' : '📋 Prepare for Doctor Visit')}</span>
                         </button>
 
                         {/* 2. Reminder */}
@@ -628,53 +677,118 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     </div>
                   )}
 
-                  {/* Expanded AI Preparation Checklist */}
+                  {/* FEATURE 2: Expanded Interactive Doctor Visit Checklist */}
                   {isSelected && (
-                    <div className="mt-3 p-4 rounded-xl bg-white border-2 border-sky-200 space-y-3">
+                    <div className="mt-3 p-4 sm:p-5 rounded-2xl bg-white border-2 border-sky-300 space-y-4 shadow-2xs">
+                      {/* Section Title */}
+                      <div className="flex items-center justify-between pb-2 border-b border-sky-100">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">🩺</span>
+                          <h5 className="text-base sm:text-lg font-black text-slate-900">
+                            {isHindi ? 'डॉक्टर विजिट चेकलिस्ट व तैयारी' : 'Doctor Visit Checklist & Preparation'}
+                          </h5>
+                        </div>
+                        <span className="text-xs font-bold text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-full">
+                          {app.doctorOrService}
+                        </span>
+                      </div>
+
+                      {/* Part 1: डॉक्टर से मिलने से पहले (Interactive Checkboxes) */}
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-sky-50/70 border border-sky-200 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <h6 className="text-sm font-black text-sky-950 flex items-center gap-1.5">
+                            <span>📋</span>
+                            <span>{isHindi ? 'डॉक्टर से मिलने से पहले' : 'Before Meeting the Doctor'}</span>
+                          </h6>
+                          <span className="text-[11px] font-bold text-slate-500">
+                            {isHindi ? 'सामान पैक करते समय टिक करें' : 'Check off items as you pack'}
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {DEFAULT_DOCTOR_CHECKLIST.map((item) => {
+                            const itemKey = `${app.id}_${item.id}`;
+                            const isChecked = Boolean(checkedItems[itemKey]);
+                            return (
+                              <label
+                                key={item.id}
+                                className={`flex items-start gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                                  isChecked
+                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                                    : 'bg-white border-slate-200 text-slate-800 hover:border-sky-300'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleChecklistItem(itemKey)}
+                                  className="mt-0.5 w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 shrink-0 cursor-pointer"
+                                />
+                                <span className={`text-xs sm:text-sm font-bold leading-normal ${isChecked ? 'line-through text-slate-500' : ''}`}>
+                                  {isHindi ? item.hi : item.en}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Part 2: डॉक्टर से पूछने वाले सवाल (Neutral Communication Questions) */}
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2.5">
+                        <h6 className="text-sm font-black text-amber-950 flex items-center gap-1.5">
+                          <span>❓</span>
+                          <span>{isHindi ? 'डॉक्टर से पूछने वाले सवाल' : 'Questions to Ask Your Doctor'}</span>
+                        </h6>
+                        <p className="text-xs text-slate-600 font-semibold">
+                          {isHindi
+                            ? 'अपनी बातचीत को आसान और स्पष्ट रखने के लिए आप ये सवाल पूछ सकते हैं:'
+                            : 'Simple questions to help you understand your health clearly:'}
+                        </p>
+                        <ul className="space-y-1.5">
+                          {DEFAULT_DOCTOR_QUESTIONS.map((q, idx) => (
+                            <li
+                              key={idx}
+                              className="text-xs sm:text-sm font-bold text-slate-800 flex items-start gap-2 bg-white/80 p-2 rounded-lg border border-amber-200/80"
+                            >
+                              <span className="text-amber-700 font-black shrink-0">•</span>
+                              <span>{isHindi ? q.hi : q.en}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Part 3: Supplemental AI generated suggestions (if any) */}
                       {prepLoading && (
                         <div className="flex items-center gap-2 text-sky-900 font-bold text-xs sm:text-sm py-2">
                           <RefreshCw className="w-4 h-4 animate-spin text-sky-600" />
-                          <span>{isHindi ? 'डॉक्टर से मुलाकात की तैयारी सूची बनाई जा रही है...' : 'Preparing visit checklist...'}</span>
+                          <span>{isHindi ? 'अतिरिक्त सुझाव जाँचे जा रहे हैं...' : 'Checking additional suggestions...'}</span>
                         </div>
                       )}
 
-                      {prepError && (
-                        <div className="p-2.5 rounded-lg bg-amber-50 text-amber-900 text-xs font-bold">
-                          {prepError}
+                      {prepResult && prepResult.questionsToAsk.length > 0 && (
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                          <span className="text-xs font-black text-slate-800 block">
+                            💡 {isHindi ? 'विशेष परामर्श नोट्स:' : 'Specific notes for this visit:'}
+                          </span>
+                          <ul className="space-y-1">
+                            {prepResult.questionsToAsk.slice(0, 3).map((q: string, idx: number) => (
+                              <li key={idx} className="text-xs font-semibold text-slate-700 flex items-start gap-2">
+                                <span className="text-sky-600 font-bold">✓</span>
+                                <span>{q}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
 
-                      {prepResult && (
-                        <div className="space-y-3">
-                          <div className="p-3 rounded-lg bg-sky-50 border border-sky-200">
-                            <span className="text-xs font-black uppercase text-sky-900 block mb-1">
-                              📋 {isHindi ? 'साथ ले जाने वाले जरूरी कागज़ात व तैयारी:' : 'Items to carry & Preparation:'}
-                            </span>
-                            <ul className="space-y-1">
-                              {prepResult.checklist.map((it: string, idx: number) => (
-                                <li key={idx} className="text-xs sm:text-sm font-semibold text-slate-800 flex items-start gap-2">
-                                  <span className="text-sky-600 font-bold">✓</span>
-                                  <span>{it}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                            <span className="text-xs font-black uppercase text-amber-950 block mb-1">
-                              ❓ {isHindi ? 'डॉक्टर से पूछने योग्य जरूरी सवाल:' : 'Questions to ask:'}
-                            </span>
-                            <ul className="space-y-1">
-                              {prepResult.questionsToAsk.map((q: string, idx: number) => (
-                                <li key={idx} className="text-xs sm:text-sm font-semibold text-slate-800 flex items-start gap-2">
-                                  <span className="text-amber-600 font-bold">•</span>
-                                  <span>{q}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      )}
+                      {/* Part 4: Strict Medical Safety Notice */}
+                      <div className="p-3 rounded-xl bg-slate-100/90 border border-slate-300 text-slate-700 text-xs font-semibold leading-relaxed">
+                        <p>
+                          {isHindi
+                            ? '⚠️ महत्वपूर्ण: यह तैयारी सूची केवल सहायता और संगठन के लिए है। साथी कोई चिकित्सीय सलाह (medical advice), निदान (diagnosis) या दवा में बदलाव का सुझाव नहीं देता। हमेशा अपने डॉक्टर के निर्देशों का पालन करें।'
+                            : '⚠️ Medical Safety Notice: This checklist is for organizational support only. Saathi never provides medical diagnoses or suggests changing medication. Always follow the advice of your qualified healthcare provider.'}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>

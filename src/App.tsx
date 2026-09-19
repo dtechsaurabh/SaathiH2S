@@ -12,6 +12,7 @@ import { ScamCheckerModal } from './components/ScamCheckerModal';
 import { DocumentExplainerModal } from './components/DocumentExplainerModal';
 import { MedicineTrackerModal } from './components/MedicineTrackerModal';
 import { AppointmentModal } from './components/AppointmentModal';
+import { EmergencyHelpCard } from './components/EmergencyHelpCard';
 
 import {
   loadSeniorSettings,
@@ -53,6 +54,7 @@ export default function App() {
   const [isDocExplainerOpen, setIsDocExplainerOpen] = useState(false);
   const [isMedicineTrackerOpen, setIsMedicineTrackerOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+  const [prepareAppId, setPrepareAppId] = useState<string | null>(null);
 
   // 4. Chat State
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -488,7 +490,14 @@ export default function App() {
           medicines={medicines}
           appointments={appointments}
           onOpenMedicineTracker={() => setIsMedicineTrackerOpen(true)}
-          onOpenAppointments={() => setIsAppointmentOpen(true)}
+          onOpenAppointments={(targetAppId) => {
+            setPrepareAppId(targetAppId || null);
+            setIsAppointmentOpen(true);
+          }}
+          onPrepareAppointment={(app) => {
+            setPrepareAppId(app.id);
+            setIsAppointmentOpen(true);
+          }}
           onOpenScamChecker={() => setIsScamCheckerOpen(true)}
           onOpenDocExplainer={() => setIsDocExplainerOpen(true)}
           onMarkMedTaken={handleMarkMedicineTaken}
@@ -521,6 +530,9 @@ export default function App() {
             }
           }}
         />
+
+        {/* Feature 3: Emergency & Senior Safety Help Card (Prominent, 1-second access) */}
+        <EmergencyHelpCard language={settings.language} />
 
         {/* 4. Large Core Service Feature Action Cards */}
         <FeatureCards
@@ -688,7 +700,10 @@ export default function App() {
       {/* MODAL 6: Doctor Appointment & Prep Checklist Modal */}
       <AppointmentModal
         isOpen={isAppointmentOpen}
-        onClose={() => setIsAppointmentOpen(false)}
+        onClose={() => {
+          setIsAppointmentOpen(false);
+          setPrepareAppId(null);
+        }}
         language={settings.language}
         soundEnabled={settings.soundEnabled}
         appointments={appointments}
@@ -697,6 +712,8 @@ export default function App() {
           resetDemoData();
           setAppointments(loadAppointments());
         }}
+        onSetReminder={handleAddReminder}
+        initialPrepareAppId={prepareAppId}
       />
     </div>
   );

@@ -86,6 +86,53 @@ describe('AI Service Hardening & Resilience Suite', () => {
       expect(result.suggestedAction).toBe('open_appointment');
     });
 
+    it('answers "आज मेरा क्या काम है?" with Smart Daily Summary locally without network call', async () => {
+      const mockMedicines = [
+        {
+          id: 'med-1',
+          name: 'Telmisartan 40mg',
+          time: '08:30 AM',
+          dosage: '1 Tablet',
+          status: 'pending' as const,
+        },
+      ];
+      const mockAppointments = [
+        {
+          id: 'app-1',
+          doctorOrService: 'Dr. Anita Gupta',
+          date: 'आज (Today)',
+          time: '04:00 PM',
+        },
+      ];
+
+      const result = await aiService.sendChatMessage(
+        'आज मेरा क्या काम है?',
+        'hi',
+        'general',
+        { medicines: mockMedicines, appointments: mockAppointments }
+      );
+
+      expect(result.source).toBe('local-companion');
+      expect(result.reply).toContain('आज का Saathi Summary');
+      expect(result.reply).toContain('Telmisartan');
+      expect(result.reply).toContain('Dr. Anita Gupta');
+      expect(result.suggestedAction).toBe('open_appointment');
+    });
+
+    it('answers "कल डॉक्टर के पास जाना है, मुझे क्या तैयारी करनी चाहिए?" with 5-point checklist locally', async () => {
+      const result = await aiService.sendChatMessage(
+        'कल डॉक्टर के पास जाना है, मुझे क्या तैयारी करनी चाहिए?',
+        'hi',
+        'general'
+      );
+
+      expect(result.source).toBe('local-companion');
+      expect(result.reply).toContain('डॉक्टर से मिलने से पहले यह 5-सूत्री चेकलिस्ट पूरी करें');
+      expect(result.steps?.length).toBe(5);
+      expect(result.steps?.[0]).toContain('दवाइयों की सूची');
+      expect(result.suggestedAction).toBe('open_appointment');
+    });
+
     it('answers "appointment कैसे बनाऊँ?" with step-by-step guidance locally', async () => {
       const result = await aiService.sendChatMessage(
         'appointment कैसे बनाऊँ?',

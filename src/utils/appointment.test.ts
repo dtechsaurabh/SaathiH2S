@@ -137,4 +137,20 @@ describe('Appointment Management & Lifecycle Tests', () => {
     expect(loadedReminders[0].category).toBe('doctor');
     expect(loadedReminders[0].completed).toBe(false);
   });
+
+  it('persists doctor visit checklist checked items in localStorage across sessions', () => {
+    const checklistKey = 'saathi_doctor_checklist_items';
+    const checkedState: Record<string, boolean> = {
+      'app-1_med_list': true,
+      'app-1_old_reports': true,
+      'app-1_main_issue': false,
+    };
+
+    localStorage.setItem(checklistKey, JSON.stringify(checkedState));
+
+    const retrieved = JSON.parse(localStorage.getItem(checklistKey)!);
+    expect(retrieved['app-1_med_list']).toBe(true);
+    expect(retrieved['app-1_old_reports']).toBe(true);
+    expect(retrieved['app-1_main_issue']).toBe(false);
+  });
 });

@@ -8,28 +8,34 @@ import {
   ArrowRight,
   BellRing,
   Calendar,
+  ClipboardList,
+  Shield,
+  Sun,
 } from 'lucide-react';
-import { MedicineItem, AppointmentItem, Language } from '../types';
+import { MedicineItem, AppointmentItem, Language, ReminderItem } from '../types';
 import { formatSeniorMedicineTime } from '../utils/dateHelpers';
 
 interface TodayHelpDashboardProps {
   language: Language;
   medicines: MedicineItem[];
   appointments: AppointmentItem[];
+  reminders?: ReminderItem[];
   onOpenMedicineTracker: () => void;
-  onOpenAppointments: () => void;
+  onOpenAppointments: (prepareAppId?: string) => void;
   onOpenScamChecker: () => void;
   onOpenDocExplainer: () => void;
   onMarkMedTaken: (id: string) => void;
   onMarkMedSkipped?: (id: string) => void;
   onSelectPrompt: (prompt: string) => void;
   onSetAppointmentReminder?: (app: AppointmentItem) => void;
+  onPrepareAppointment?: (app: AppointmentItem) => void;
 }
 
 export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
   language,
   medicines,
   appointments,
+  reminders = [],
   onOpenMedicineTracker,
   onOpenAppointments,
   onOpenScamChecker,
@@ -38,17 +44,31 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
   onMarkMedSkipped,
   onSelectPrompt,
   onSetAppointmentReminder,
+  onPrepareAppointment,
 }) => {
   const isHindi = language === 'hi';
 
-  // Find next pending medicine
+  // Find pending medicines
   const pendingMedicines = medicines.filter((m) => m.status === 'pending');
   const nextMedicine = pendingMedicines[0] || null;
+  const pendingMedsCount = pendingMedicines.length;
 
   // Find next upcoming appointment
   const upcomingAppointment = appointments.find((a) => a.status === 'upcoming') || appointments[0] || null;
 
+  // Pending reminders
+  const pendingReminders = reminders.filter((r) => !r.completed);
+
   const hasAnyReminders = Boolean(nextMedicine || upcomingAppointment);
+  const hasAnyPending = pendingMedsCount > 0 || Boolean(upcomingAppointment) || pendingReminders.length > 0;
+
+  const handlePrepareDoctorVisit = (app: AppointmentItem) => {
+    if (onPrepareAppointment) {
+      onPrepareAppointment(app);
+    } else {
+      onOpenAppointments(app.id);
+    }
+  };
 
   return (
     <section
@@ -80,6 +100,114 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
           <span className="text-xs sm:text-sm font-bold text-amber-900 bg-amber-100/80 px-3.5 py-1.5 rounded-xl border border-amber-200 self-start sm:self-center">
             📅 {new Date().toLocaleDateString(isHindi ? 'hi-IN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </span>
+        </div>
+
+        {/* FEATURE 1: 🌞 आज का Saathi Summary */}
+        <div
+          id="saathi-daily-summary"
+          className="p-4 sm:p-5 rounded-2xl bg-amber-50/70 border-2 border-amber-300 space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl" aria-hidden="true">🌞</span>
+              <h4 className="text-base sm:text-lg font-black text-amber-950">
+                {isHindi ? '🌞 आज का Saathi Summary' : "🌞 Today's Saathi Summary"}
+              </h4>
+            </div>
+            <span className="text-xs font-bold text-amber-900 bg-amber-200/80 px-2.5 py-1 rounded-full border border-amber-300">
+              {isHindi ? 'आज का दिन' : "Today's Overview"}
+            </span>
+          </div>
+
+          {hasAnyPending ? (
+            <div className="space-y-2 pt-1">
+              {/* Medicines overview */}
+              {pendingMedsCount > 0 ? (
+                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-amber-200">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800">
+                    <span className="text-base">💊</span>
+                    <span>
+                      {isHindi
+                        ? `${pendingMedsCount} दवाइयाँ बाकी हैं`
+                        : `${pendingMedsCount} medicine(s) pending`}
+                      {nextMedicine ? ` (${nextMedicine.name} • ${nextMedicine.time})` : ''}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onOpenMedicineTracker}
+                    className="text-xs font-black text-amber-800 hover:text-amber-950 underline shrink-0 px-2 py-1 min-h-[36px] flex items-center"
+                  >
+                    {isHindi ? 'दवा देखें' : 'View'}
+                  </button>
+                </div>
+              ) : medicines.length > 0 ? (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-800">
+                  <span className="text-base">💊</span>
+                  <span>{isHindi ? 'आज की सभी दवाइयाँ ली जा चुकी हैं।' : 'All medicines completed for today.'}</span>
+                </div>
+              ) : null}
+
+              {/* Appointment overview */}
+              {upcomingAppointment && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-amber-200">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-800">
+                    <span className="text-base">📅</span>
+                    <span>
+                      {isHindi
+                        ? `डॉक्टर से मुलाकात ${upcomingAppointment.time} पर है (${upcomingAppointment.doctorOrService})`
+                        : `Doctor visit at ${upcomingAppointment.time} (${upcomingAppointment.doctorOrService})`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlePrepareDoctorVisit(upcomingAppointment)}
+                    aria-label={isHindi ? `${upcomingAppointment.doctorOrService} अपॉइंटमेंट की तैयारी करें` : `Prepare checklist for ${upcomingAppointment.doctorOrService}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-800 text-white font-black text-xs shrink-0 self-start sm:self-center shadow-2xs min-h-[38px] cursor-pointer"
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    <span>{isHindi ? '📋 Appointment की तैयारी करें' : '📋 Prepare Checklist'}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Tasks / Reminders overview */}
+              {pendingReminders.length > 0 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-amber-200 text-xs sm:text-sm font-bold text-slate-800">
+                  <span className="text-base">📋</span>
+                  <span>
+                    {isHindi
+                      ? `जरूरी काम: ${pendingReminders[0].titleHi || pendingReminders[0].title} (${pendingReminders[0].timeLabelHi || pendingReminders[0].time})`
+                      : `Pending task: ${pendingReminders[0].title} (${pendingReminders[0].timeLabel || pendingReminders[0].time})`}
+                  </span>
+                </div>
+              )}
+
+              {/* Safety reminder */}
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-100/70 border border-amber-300 text-xs sm:text-sm font-black text-amber-950">
+                <span className="text-base">🛡️</span>
+                <span>
+                  {isHindi
+                    ? '🛡️ OTP/PIN किसी के साथ साझा न करें।'
+                    : '🛡️ Safety Reminder: Never share your OTP or PIN with anyone.'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            /* Friendly empty state */
+            <div className="p-4 rounded-xl bg-white border border-amber-200 text-center space-y-1.5">
+              <p className="text-sm sm:text-base font-black text-slate-800">
+                {isHindi
+                  ? 'आज के लिए कोई जरूरी काम नहीं है। Saathi आपके साथ है।'
+                  : 'No urgent tasks for today. Saathi is always with you.'}
+              </p>
+              <p className="text-xs font-bold text-amber-900">
+                {isHindi
+                  ? '🛡️ OTP/PIN किसी के साथ साझा न करें।'
+                  : '🛡️ Safety Reminder: Never share your OTP or PIN.'}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Empty State when no reminders exist */}
@@ -247,12 +375,12 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                 <div className="pt-2 flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={onOpenAppointments}
-                    aria-label={isHindi ? `${upcomingAppointment.doctorOrService} अपॉइंटमेंट का विवरण देखें` : `View details for appointment with ${upcomingAppointment.doctorOrService}`}
+                    onClick={() => handlePrepareDoctorVisit(upcomingAppointment)}
+                    aria-label={isHindi ? `${upcomingAppointment.doctorOrService} डॉक्टर के लिए तैयारी करें` : `Prepare checklist for ${upcomingAppointment.doctorOrService}`}
                     className="flex-1 px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all min-h-[44px] focus-visible:ring-4 focus-visible:ring-sky-400 cursor-pointer"
                   >
-                    <span>{isHindi ? 'विवरण देखें' : 'View Details'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ClipboardList className="w-4 h-4" />
+                    <span>{isHindi ? '📋 डॉक्टर के लिए तैयारी करें' : '📋 Prepare for Doctor Visit'}</span>
                   </button>
 
                   {onSetAppointmentReminder && (
@@ -270,7 +398,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
               ) : (
                 <button
                   type="button"
-                  onClick={onOpenAppointments}
+                  onClick={() => onOpenAppointments()}
                   className="w-full py-2.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 text-center min-h-[44px] flex items-center justify-center"
                 >
                   {isHindi ? '+ नई Appointment जोड़ें' : '+ Add Appointment'}
@@ -306,7 +434,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
             {upcomingAppointment ? (
               <button
                 type="button"
-                onClick={onOpenAppointments}
+                onClick={() => handlePrepareDoctorVisit(upcomingAppointment)}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm transition-all min-h-[44px] shadow-xs cursor-pointer"
               >
                 {isHindi ? 'तैयारी करें' : 'Prepare Checklist'}

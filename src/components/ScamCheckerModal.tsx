@@ -392,7 +392,7 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
             {result.recommendedActions && result.recommendedActions.length > 0 && (
               <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-300 space-y-2">
                 <span className="text-xs sm:text-sm font-black uppercase tracking-wide text-emerald-950 block">
-                  🛡️ {isHindi ? 'Safe Action (सुरक्षित कदम):' : 'Safe Action:'}
+                  ✅ {isHindi ? 'Safe Action (सुरक्षित कदम):' : 'Safe Action:'}
                 </span>
                 <ul className="space-y-1.5">
                   {result.recommendedActions.map((act, idx) => (
@@ -405,22 +405,33 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
               </div>
             )}
 
-            {/* Cyber Helpline Hotline 1930 */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 text-xs">
-              <div className="flex items-center gap-2 text-slate-700 font-bold">
-                <PhoneCall className="w-4 h-4 text-amber-600" />
+            {/* 5. Cyber Crime Helpline 1930 */}
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-slate-800 font-bold text-xs sm:text-sm">
+                <PhoneCall className="w-5 h-5 text-amber-700 shrink-0" />
                 <span>
                   {isHindi
-                    ? 'धोखाधड़ी होने पर तुरंत 1930 (National Cyber Crime Portal) पर कॉल करें।'
-                    : 'If defrauded, immediately call 1930 (National Cyber Helpline).'}
+                    ? '☎️ सहायता: किसी भी वित्तीय धोखाधड़ी या संदेह में 1930 (National Cyber Crime Helpline) पर तुरंत कॉल करें।'
+                    : '☎️ Help: In case of financial fraud or suspicion, call 1930 (National Cyber Crime Helpline) immediately.'}
                 </span>
               </div>
               <a
+                id="scam-modal-call-1930"
                 href="tel:1930"
-                className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black shrink-0"
+                aria-label={isHindi ? '1930 साइबर क्राइम हेल्पलाइन पर कॉल करें' : 'Call 1930 National Cyber Helpline'}
+                className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm shrink-0 shadow-xs min-h-[44px] flex items-center justify-center focus-visible:ring-4 focus-visible:ring-amber-400"
               >
                 📞 {isHindi ? '1930 पर कॉल करें' : 'Call 1930'}
               </a>
+            </div>
+
+            {/* 6. Non-100% Certainty Disclaimer */}
+            <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 text-center">
+              <p className="text-[11px] sm:text-xs text-slate-600 font-semibold leading-relaxed">
+                {isHindi
+                  ? '💡 अस्वीकरण (Disclaimer): यह विश्लेषण AI सुरक्षा मॉडल पर आधारित है और 100% निश्चित होने का दावा नहीं करता। यदि आपको संदेह हो, तो किसी अज्ञात लिंक या OTP को कभी न खोलें और सीधे बैंक या 1930 से पुष्टि करें।'
+                  : '💡 Disclaimer: This analysis is based on AI safety models and does not claim 100% certainty. When in doubt, never click unknown links or share OTPs; always verify with your bank or call 1930.'}
+              </p>
             </div>
           </div>
         )}
