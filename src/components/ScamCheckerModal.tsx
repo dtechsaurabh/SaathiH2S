@@ -22,6 +22,7 @@ interface ScamCheckerModalProps {
   onClose: () => void;
   language: Language;
   soundEnabled: boolean;
+  initialText?: string;
   onAskSaathi?: (prompt: string) => void;
 }
 
@@ -54,11 +55,19 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
   language,
   soundEnabled,
   onAskSaathi,
+  initialText,
 }) => {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState(initialText || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScamAnalysisResult | null>(null);
+
+  useEffect(() => {
+    if (isOpen && initialText) {
+      setInputText(initialText);
+      setError(null);
+    }
+  }, [isOpen, initialText]);
 
   useEffect(() => {
     if (!isOpen) return;

@@ -13,6 +13,7 @@ import { DocumentExplainerModal } from './components/DocumentExplainerModal';
 import { MedicineTrackerModal } from './components/MedicineTrackerModal';
 import { AppointmentModal } from './components/AppointmentModal';
 import { EmergencyHelpCard } from './components/EmergencyHelpCard';
+import { SeniorJourneyWorkflow } from './components/SeniorJourneyWorkflow';
 
 import {
   loadSeniorSettings,
@@ -55,6 +56,8 @@ export default function App() {
   const [isMedicineTrackerOpen, setIsMedicineTrackerOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [prepareAppId, setPrepareAppId] = useState<string | null>(null);
+  const [initialDocText, setInitialDocText] = useState<string | undefined>(undefined);
+  const [initialScamText, setInitialScamText] = useState<string | undefined>(undefined);
 
   // 4. Chat State
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -482,9 +485,58 @@ export default function App() {
           fontSize={settings.fontSize}
           onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
           onSelectPrompt={handleSelectPrompt}
+          onScrollToTodayHelp={() => {
+            const el = document.getElementById('today-help-section');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onOpenAccessibility={() => setIsAccessibilityOpen(true)}
+          onOpenMedicineTracker={() => setIsMedicineTrackerOpen(true)}
+          onOpenAppointments={() => {
+            setPrepareAppId(null);
+            setIsAppointmentOpen(true);
+          }}
+          onOpenScamChecker={() => {
+            setInitialScamText(undefined);
+            setIsScamCheckerOpen(true);
+          }}
+          onOpenDocExplainer={() => {
+            setInitialDocText(undefined);
+            setIsDocExplainerOpen(true);
+          }}
+          onScrollToEmergency={() => {
+            const el = document.getElementById('emergency-help-section');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
         />
 
-        {/* 3. Proactive Care Dashboard ("Today's Help" / "आज की सहायता") */}
+        {/* 3. Senior Citizen Care Journey: Understand → Decide → Act → Stay Safe */}
+        <SeniorJourneyWorkflow
+          language={settings.language}
+          fontSize={settings.fontSize}
+          onOpenDocExplainer={(sampleKey) => {
+            if (sampleKey === 'pension') {
+              setInitialDocText('GOVERNMENT OF INDIA - DEPARTMENT OF PENSION: All central & state pensioners are hereby informed to submit their Annual Digital Life Certificate (DLC) through Jeevan Pramaan portal or Face Authentication App between October 1 and November 30. Submission requires valid 12-digit PPO number, Aadhaar-linked mobile, and biometric authorization. Default in timely submission will lead to provisional withholding of monthly pension disbursement starting December.');
+            } else {
+              setInitialDocText(undefined);
+            }
+            setIsDocExplainerOpen(true);
+          }}
+          onOpenScamChecker={(sampleKey) => {
+            if (sampleKey === 'electricity') {
+              setInitialScamText('Dear Consumer, your electricity power will be disconnected tonight at 9:30 PM from the sub-division office because your previous month bill was not updated. Immediately call electricity officer at 9876543210 or click http://bijli-update.xyz to prevent power cut.');
+            } else {
+              setInitialScamText(undefined);
+            }
+            setIsScamCheckerOpen(true);
+          }}
+          onOpenAppointments={(openPrep) => {
+            setPrepareAppId(openPrep && appointments.length > 0 ? appointments[0].id : null);
+            setIsAppointmentOpen(true);
+          }}
+          onOpenMedicineTracker={() => setIsMedicineTrackerOpen(true)}
+        />
+
+        {/* 4. Proactive Care Dashboard ("Today's Help" / "आज की सहायता") */}
         <TodayHelpDashboard
           language={settings.language}
           medicines={medicines}
@@ -656,9 +708,13 @@ export default function App() {
       {/* MODAL 3: Scam & Fraud Checker Modal */}
       <ScamCheckerModal
         isOpen={isScamCheckerOpen}
-        onClose={() => setIsScamCheckerOpen(false)}
+        onClose={() => {
+          setIsScamCheckerOpen(false);
+          setInitialScamText(undefined);
+        }}
         language={settings.language}
         soundEnabled={settings.soundEnabled}
+        initialText={initialScamText}
         onAskSaathi={(prompt) => {
           handleSendMessage(prompt);
           const element = document.getElementById('saathi-assistant-section');
@@ -671,9 +727,13 @@ export default function App() {
       {/* MODAL 4: Plain Language Document Explainer Modal */}
       <DocumentExplainerModal
         isOpen={isDocExplainerOpen}
-        onClose={() => setIsDocExplainerOpen(false)}
+        onClose={() => {
+          setIsDocExplainerOpen(false);
+          setInitialDocText(undefined);
+        }}
         language={settings.language}
         soundEnabled={settings.soundEnabled}
+        initialText={initialDocText}
         onAskSaathi={(prompt) => {
           handleSendMessage(prompt);
           const element = document.getElementById('saathi-assistant-section');

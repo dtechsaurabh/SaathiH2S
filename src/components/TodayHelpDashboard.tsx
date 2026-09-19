@@ -450,6 +450,40 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
             )}
           </div>
         </div>
+
+        {/* 4. Natural Senior Queries Test Hub */}
+        <div className="pt-2 border-t border-slate-200 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+              <span>💬</span>
+              <span>{isHindi ? 'सीधे पूछें (Natural Senior Queries):' : 'Natural Senior Queries:'}</span>
+            </span>
+            <span className="text-[11px] font-extrabold text-slate-500">
+              {isHindi ? 'स्थानीय व त्वरित उत्तर' : 'Instant Local Answers'}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { hi: 'आज मेरा क्या काम है?', en: "What's my schedule today?" },
+              { hi: 'मेरी दवा कब है?', en: 'When is my medicine?' },
+              { hi: 'कल डॉक्टर के पास जाना है', en: 'Doctor visit tomorrow' },
+              { hi: 'डॉक्टर से क्या पूछूं?', en: 'What to ask doctor?' },
+              { hi: 'यह मैसेज सुरक्षित है?', en: 'Is this message safe?' },
+            ].map((q, idx) => (
+              <button
+                key={idx}
+                type="button"
+                id={`natural-query-btn-${idx}`}
+                onClick={() => onSelectPrompt(isHindi ? q.hi : q.en)}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-amber-100/80 active:bg-amber-200 text-slate-800 hover:text-amber-950 text-xs font-bold border border-slate-300 hover:border-amber-400 transition-all cursor-pointer min-h-[36px] flex items-center gap-1"
+              >
+                <span>“{isHindi ? q.hi : q.en}”</span>
+                <span className="text-amber-700">→</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

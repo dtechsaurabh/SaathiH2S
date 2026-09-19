@@ -185,6 +185,10 @@ export function resolveLocalDirectAnswer(
     text.includes('दवाई कब') ||
     text.includes('dawa kab') ||
     text.includes('dawai kab') ||
+    text.includes('dawai ka time') ||
+    text.includes('dawa ka time') ||
+    text.includes('dawai time') ||
+    text.includes('dawa time') ||
     text.includes('when is my medicine') ||
     text.includes('next medicine') ||
     text.includes('medicine time') ||
@@ -330,9 +334,12 @@ export function resolveLocalDirectAnswer(
     text.includes('डॉक्टर के लिए क्या पूछना') ||
     text.includes('डॉक्टर से क्या पूछें') ||
     text.includes('डॉक्टर से क्या पूछना') ||
+    text.includes('डॉक्टर से क्या पूछूं') ||
     text.includes('kya poochna chahiye') ||
     text.includes('kya puchna') ||
     text.includes('what should i ask') ||
+    text.includes('what questions should i ask') ||
+    text.includes('what to ask doctor') ||
     text.includes('questions to ask doctor') ||
     text.includes('questions for doctor') ||
     text.includes('doctor se kya pooche') ||
@@ -362,7 +369,77 @@ export function resolveLocalDirectAnswer(
     };
   }
 
-  // 5. Critical Medical Safety Guardrail: Direct treatment / dosage alteration / diagnosis queries
+  // 5. Message Safety / Scam Check query: "यह मैसेज सुरक्षित है?", "is this message safe", "kya ye message safe hai", "bijli cut message"
+  const isMessageSafetyQuery =
+    text.includes('मैसेज सुरक्षित') ||
+    text.includes('संदेश सुरक्षित') ||
+    text.includes('message safe') ||
+    text.includes('is this message safe') ||
+    text.includes('ye message safe hai') ||
+    text.includes('kya yeh message safe hai') ||
+    text.includes('scam check kaise') ||
+    text.includes('संदिग्ध मैसेज') ||
+    text.includes('bijli cut') ||
+    text.includes('बिजली बिल कट') ||
+    text.includes('lottery message') ||
+    text.includes('kyc block');
+
+  if (isMessageSafetyQuery) {
+    return {
+      reply: isHi
+        ? 'किसी भी अनजान SMS या WhatsApp संदेश को सुरक्षित मानने से पहले यह 3 बातें अवश्य जांचें (हेल्पलाइन: 1930):'
+        : 'Before trusting any unfamiliar SMS or WhatsApp message, always check these 3 safety rules (Cyber Helpline: 1930):',
+      steps: isHi
+        ? [
+            '1. क्या इसमें बिजली कटने, लॉटरी जीतने या बैंक खाता बंद होने का तत्काल डर या लालच है?',
+            '2. क्या इसमें कोई अनजान नीला लिंक या किसी अनजान नंबर पर तुरंत कॉल करने को कहा गया है?',
+            '3. क्या आपसे OTP, PIN, पासवर्ड या बैंक विवरण मांगा जा रहा है?',
+            'यदि हाँ, तो यह धोखाधड़ी हो सकती है। उस संदेश की जांच करने के लिए नीचे दिए गए "Scam Check" बटन पर टैप करें।',
+          ]
+        : [
+            '1. Does it create sudden panic (e.g. power cut, account blocked) or promise easy lottery money?',
+            '2. Does it include an unknown blue web link or ask you to call an unofficial mobile number?',
+            '3. Does it ask for your OTP, PIN, password, or banking credentials?',
+            'If yes, it may be a scam. Tap the "Scam Check" button below to analyze the message safely.',
+          ],
+      suggestedAction: 'open_scam',
+      source: 'local-companion',
+    };
+  }
+
+  // 5b. Document / Kaagaz Explainer query: "कागज़ समझाओ", "kaagaz samjhao", "explain document", "pension notice"
+  const isDocumentExplainerQuery =
+    text.includes('कागज़ समझाओ') ||
+    text.includes('kaagaz samjhao') ||
+    text.includes('kagaz samjhao') ||
+    text.includes('कागज़ात') ||
+    text.includes('explain document') ||
+    text.includes('explain bill') ||
+    text.includes('pension notice') ||
+    text.includes('discharge summary samjhao');
+
+  if (isDocumentExplainerQuery) {
+    return {
+      reply: isHi
+        ? 'साथी आपके सरकारी नोटिस, पेंशन पत्र और अस्पताल के बिल को सरल शब्दों में समझा सकता है:'
+        : 'Saathi can explain government notices, pension letters, and hospital bills in plain words:',
+      steps: isHi
+        ? [
+            '1. नीचे दिए गए "कागज़ात समझें" बटन पर टैप करें।',
+            '2. अपने नोटिस या पत्र का पाठ पेस्ट करें या सैंपल नोटिस चुनें।',
+            '3. साथी आपको बिना कठिन कानूनी भाषा के 3 मुख्य बातें बताएगा: इसका क्या मतलब है, आपको क्या करना है, और समय-सीमा क्या है।',
+          ]
+        : [
+            '1. Tap the "Explain Document" button below.',
+            '2. Paste your notice text or select a sample notice.',
+            '3. Saathi translates legal/official jargon into 3 simple points: What it means, What you need to do, and Deadlines.',
+          ],
+      suggestedAction: 'open_document',
+      source: 'local-companion',
+    };
+  }
+
+  // 6. Critical Medical Safety Guardrail: Direct treatment / dosage alteration / diagnosis queries
   // Saathi must NEVER invent treatment instructions, diagnoses, or dosage changes.
   const isMedicalTreatmentOrDosageQuery =
     text.includes('खुराक बदल') ||

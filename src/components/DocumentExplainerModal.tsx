@@ -20,6 +20,7 @@ interface DocumentExplainerModalProps {
   onClose: () => void;
   language: Language;
   soundEnabled: boolean;
+  initialText?: string;
   onAskSaathi?: (prompt: string) => void;
 }
 
@@ -47,11 +48,19 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
   language,
   soundEnabled,
   onAskSaathi,
+  initialText,
 }) => {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState(initialText || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DocumentAnalysisResult | null>(null);
+
+  useEffect(() => {
+    if (isOpen && initialText) {
+      setInputText(initialText);
+      setError(null);
+    }
+  }, [isOpen, initialText]);
 
   useEffect(() => {
     if (!isOpen) return;
