@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, ArrowDown, Sparkles } from 'lucide-react';
+import { Mic, ArrowDown, Shield, Heart, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { FontSize, Language } from '../types';
 
 interface HeroSectionProps {
@@ -8,6 +8,7 @@ interface HeroSectionProps {
   onOpenVoiceModal: () => void;
   onSelectPrompt: (promptText: string) => void;
   onScrollToTodayHelp?: () => void;
+  onOpenAccessibility?: () => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
@@ -16,15 +17,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenVoiceModal,
   onSelectPrompt,
   onScrollToTodayHelp,
+  onOpenAccessibility,
 }) => {
   const isHindi = language === 'hi';
-
-  const titleSizeClass =
-    fontSize === 'xlarge'
-      ? 'text-3xl sm:text-4xl'
-      : fontSize === 'large'
-      ? 'text-2xl sm:text-3xl'
-      : 'text-xl sm:text-2xl';
 
   const handleScrollToTodayHelp = () => {
     if (onScrollToTodayHelp) {
@@ -38,29 +33,44 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   return (
-    <section className="bg-amber-50/50 border-b border-amber-200/70 pt-6 sm:pt-10 pb-8 px-4">
+    <section className="bg-amber-50/60 border-b-2 border-amber-200/80 pt-6 sm:pt-9 pb-7 px-4">
       <div className="max-w-3xl mx-auto text-center space-y-4 sm:space-y-5">
-        {/* Friendly greeting */}
-        <div className="space-y-1.5">
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            {isHindi ? 'नमस्ते 👋' : 'Namaste 👋'}
+        {/* Core Value Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-black">
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+            👵 {isHindi ? 'Senior-First Design' : 'Senior-First Design'}
+          </span>
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+            🌿 {isHindi ? 'सरल व शांत' : 'Simple & Calm'}
+          </span>
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-900 border border-blue-300">
+            🛡️ {isHindi ? 'सुरक्षित व निजी' : '100% Safe & Private'}
+          </span>
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-900 border border-purple-300">
+            🤝 {isHindi ? 'आत्मनिर्भर सहायता' : 'Independent Living'}
+          </span>
+        </div>
+
+        {/* 1. Purpose Heading */}
+        <div className="space-y-2">
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+            {isHindi ? 'Saathi – आपका Digital Companion' : 'Saathi – Your Digital Companion'}
           </h2>
-          <p className="text-xl sm:text-2xl font-black text-amber-700">
-            {isHindi ? 'मैं Saathi हूँ' : 'I am Saathi'}
-          </p>
-          <p className="text-base sm:text-lg font-bold text-slate-800 max-w-xl mx-auto">
+          <p className="text-lg sm:text-xl font-extrabold text-amber-800 max-w-2xl mx-auto leading-snug">
             {isHindi
-              ? 'मैं आपके रोज़मर्रा के काम आसान बनाने में आपकी मदद कर सकता हूँ।'
-              : 'I am here to make your everyday digital tasks easy, calm, and simple.'}
+              ? 'रोज़मर्रा के digital काम आसान, सुरक्षित और समझने योग्य बनाने में आपकी मदद।'
+              : 'Helping you make everyday digital tasks simple, safe, and easy to understand.'}
           </p>
         </div>
 
-        {/* Supportive line */}
-        <p className="text-sm sm:text-base font-medium text-slate-600 max-w-lg mx-auto leading-relaxed">
-          {isHindi
-            ? 'आप जो करना चाहते हैं, बस बताइए। मैं आसान तरीके से समझाऊँगा।'
-            : 'Whatever you need help with, just ask. I will explain everything in simple, clear steps.'}
-        </p>
+        {/* Concise Senior Citizen Explanation */}
+        <div className="bg-white/80 p-3.5 sm:p-4 rounded-2xl border-2 border-amber-200 text-slate-800 text-xs sm:text-sm font-semibold max-w-2xl mx-auto shadow-2xs leading-relaxed">
+          <p>
+            {isHindi
+              ? '💡 Saathi खास तौर पर senior citizens के लिए बनाया गया है, ताकि आपको हर छोटे digital काम के लिए किसी और पर निर्भर न रहना पड़े।'
+              : '💡 Saathi is specially designed for senior citizens, so you don’t have to depend on anyone else for daily digital tasks.'}
+          </p>
+        </div>
 
         {/* Primary and Secondary Actions */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
@@ -69,7 +79,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             id="talk-to-saathi-btn"
             type="button"
             onClick={onOpenVoiceModal}
-            className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-4 rounded-2xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-extrabold text-lg sm:text-xl shadow-md hover:shadow-lg transition-all border-2 border-amber-700 min-h-[56px] focus-visible:ring-4 focus-visible:ring-amber-400 cursor-pointer"
+            className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-4 rounded-2xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-black text-lg sm:text-xl shadow-md hover:shadow-lg transition-all border-2 border-amber-700 min-h-[56px] focus-visible:ring-4 focus-visible:ring-amber-400 cursor-pointer"
           >
             <Mic className="w-6 h-6 text-amber-100 shrink-0" />
             <span>{isHindi ? '🎤 Saathi से बात करें' : '🎤 Talk to Saathi'}</span>
@@ -85,6 +95,24 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <ArrowDown className="w-4 h-4 text-amber-600" />
             <span>{isHindi ? 'आज की मदद देखें' : "View Today's Help"}</span>
           </button>
+        </div>
+
+        {/* Accessibility Assurance Banner */}
+        <div className="pt-1 flex items-center justify-center gap-2 text-xs font-bold text-slate-600">
+          <span>
+            {isHindi
+              ? '👁️ Saathi को आपकी सुविधा के अनुसार बड़ा और आसान बनाया जा सकता है।'
+              : '👁️ Saathi text size and contrast can be adjusted for your comfort.'}
+          </span>
+          {onOpenAccessibility && (
+            <button
+              type="button"
+              onClick={onOpenAccessibility}
+              className="text-amber-800 underline hover:text-amber-950 font-extrabold cursor-pointer"
+            >
+              {isHindi ? 'सुलभता बदलें' : 'Settings'}
+            </button>
+          )}
         </div>
       </div>
     </section>

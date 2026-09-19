@@ -38,8 +38,8 @@ export const TrustSafetySection: React.FC<TrustSafetySectionProps> = ({ language
             </div>
             <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
               {isHindi
-                ? 'साथी या कोई भी व्यक्ति फोन पर आपसे बैंक पासवर्ड, एटीएम पिन या OTP नहीं मांग सकता। साथी कभी ऐसी जानकारी नहीं मांगता।'
-                : 'Never share passwords, OTPs, PINs or banking credentials with Saathi or anyone over phone.'}
+                ? 'OTP, PIN, password या banking credentials कभी साझा न करें। साथी या कोई भी व्यक्ति फोन पर आपसे बैंक पासवर्ड, एटीएम पिन या OTP नहीं मांग सकता।'
+                : 'Never share OTP, PIN, password or banking credentials with Saathi or anyone over phone or internet.'}
             </p>
           </div>
 
@@ -50,8 +50,8 @@ export const TrustSafetySection: React.FC<TrustSafetySectionProps> = ({ language
             </div>
             <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
               {isHindi
-                ? 'साथी एक सहायक मार्गदर्शक है। यह डॉक्टर, वकील या बैंक प्रबंधक की वास्तविक सलाह का स्थान नहीं लेता।'
-                : 'Saathi provides helpful explanations. It does not replace professional medical or financial advice.'}
+                ? 'Saathi AI-powered assistance देता है और professional medical, legal या financial advice का replacement नहीं है।'
+                : 'Saathi provides AI-powered assistance and is not a replacement for professional medical, legal or financial advice.'}
             </p>
           </div>
 

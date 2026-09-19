@@ -60,16 +60,21 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200">
           <div>
-            <h3
-              id="today-help-heading"
-              className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5"
-            >
-              <span>{isHindi ? 'आज की मदद' : "Today's Help"}</span>
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3
+                id="today-help-heading"
+                className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5"
+              >
+                <span>{isHindi ? "आज की मदद • Care Hub" : "Today's Help • Care Hub"}</span>
+              </h3>
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-300 text-[11px] font-bold">
+                Demo Data
+              </span>
+            </div>
             <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
               {isHindi
-                ? 'आज के सबसे जरूरी काम और रिमाइंडर्स'
-                : 'Your most important reminders and tasks for today'}
+                ? 'आज के सबसे जरूरी काम, दवाइयाँ और रिमाइंडर्स'
+                : 'Your most important reminders, medicines, and schedule for today'}
             </p>
           </div>
           <span className="text-xs sm:text-sm font-bold text-amber-900 bg-amber-100/80 px-3.5 py-1.5 rounded-xl border border-amber-200 self-start sm:self-center">
@@ -82,12 +87,12 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
           <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
             <p className="text-base sm:text-lg font-bold text-slate-700">
               {isHindi
-                ? 'आज के लिए कोई जरूरी reminder नहीं है।'
-                : 'No pending reminders for today.'}
+                ? 'आज आपके लिए कोई जरूरी काम pending नहीं है।'
+                : 'No pending tasks for today.'}
             </p>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
               {isHindi
-                ? 'आप आराम से रहें। यदि किसी दवा या अपॉइंटमेंट की जरूरत हो तो नीचे बटन दबाएँ।'
+                ? 'आप निश्चिंत रहें। यदि किसी नई दवा या डॉक्टर अपॉइंटमेंट की जरूरत हो तो नीचे विकल्प चुनें।'
                 : 'You are all caught up! You can add new medicines or appointments anytime.'}
             </p>
           </div>
@@ -102,7 +107,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-800 uppercase tracking-wider">
                     <Pill className="w-4 h-4 text-emerald-600" />
-                    <span>{isHindi ? '💊 दवा' : '💊 Medicine'}</span>
+                    <span>{isHindi ? '💊 दवा रिमाइंडर' : '💊 Medicine Reminder'}</span>
                   </span>
                   {nextMedicine ? (
                     <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
@@ -117,10 +122,22 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
 
                 {nextMedicine ? (
                   <div>
-                    <h4 className="text-lg font-black text-slate-900 leading-snug">
-                      {nextMedicine.name}
-                    </h4>
-                    <p className="text-xs sm:text-sm font-extrabold text-amber-900 mt-0.5">
+                    <p className="text-sm font-black text-amber-900">
+                      {isHindi
+                        ? `💊 आपकी अगली दवा ${nextMedicine.time} पर है।`
+                        : `💊 Your next medicine is at ${nextMedicine.time}.`}
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-lg font-black text-slate-900 leading-snug mt-1">
+                        {nextMedicine.name}
+                      </h4>
+                      {nextMedicine.isDemo && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-600 border border-slate-300">
+                          Demo Data
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs sm:text-sm font-extrabold text-slate-700 mt-0.5">
                       {formatSeniorMedicineTime(
                         nextMedicine.time,
                         nextMedicine.startDate,
@@ -134,7 +151,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                   </div>
                 ) : (
                   <p className="text-sm font-bold text-slate-600 py-3">
-                    {isHindi ? 'आज के लिए कोई दवा बाकी नहीं है।' : 'No medicines pending for today.'}
+                    {isHindi ? 'आज आपके लिए कोई जरूरी काम pending नहीं है।' : 'No medicines pending for today.'}
                   </p>
                 )}
               </div>
@@ -161,10 +178,10 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                   <button
                     type="button"
                     onClick={onOpenMedicineTracker}
-                    className="px-3 py-2.5 rounded-xl bg-white hover:bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300 min-h-[44px] cursor-pointer"
+                    className="px-3 py-2.5 rounded-xl bg-white hover:bg-amber-100 text-amber-900 font-extrabold text-xs sm:text-sm border border-amber-300 min-h-[44px] cursor-pointer"
                     title={isHindi ? 'दवाइयों की सूची देखें' : 'View full medicine list'}
                   >
-                    <span>{isHindi ? 'सभी दवाइयाँ' : 'All'}</span>
+                    <span>{isHindi ? 'दवा देखें' : 'View Med'}</span>
                   </button>
                 </div>
               ) : (
@@ -184,7 +201,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-xs font-black text-sky-800 uppercase tracking-wider">
                     <Stethoscope className="w-4 h-4 text-sky-600" />
-                    <span>{isHindi ? '🩺 अगली Appointment' : '🩺 Next Appointment'}</span>
+                    <span>{isHindi ? '🩺 डॉक्टर अपॉइंटमेंट' : '🩺 Doctor Appointment'}</span>
                   </span>
                   {upcomingAppointment && (
                     <span className="text-xs font-bold text-sky-900 bg-sky-100 px-2.5 py-0.5 rounded-full border border-sky-200">
@@ -195,20 +212,29 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
 
                 {upcomingAppointment ? (
                   <div>
-                    <h4 className="text-lg font-black text-slate-900 leading-snug">
-                      {upcomingAppointment.doctorOrService}
-                    </h4>
-                    <p className="text-xs sm:text-sm font-extrabold text-slate-700 mt-0.5">
-                      {upcomingAppointment.date} • {upcomingAppointment.time}
+                    <p className="text-sm font-black text-sky-900">
+                      {isHindi
+                        ? `🩺 आपकी appointment ${upcomingAppointment.date.toLowerCase() === 'tomorrow' || upcomingAppointment.date.includes('कल') ? 'कल' : upcomingAppointment.date} ${upcomingAppointment.time} पर है।`
+                        : `🩺 Your appointment is ${upcomingAppointment.date} at ${upcomingAppointment.time}.`}
                     </p>
-                    <p className="text-xs text-slate-500 font-medium mt-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-lg font-black text-slate-900 leading-snug mt-1">
+                        {upcomingAppointment.doctorOrService}
+                      </h4>
+                      {upcomingAppointment.isDemo && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-600 border border-slate-300">
+                          Demo Data
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-600 font-medium mt-1">
                       {upcomingAppointment.specialty} • {upcomingAppointment.location}
                     </p>
                   </div>
                 ) : (
                   <p className="text-sm font-bold text-slate-600 py-3">
                     {isHindi
-                      ? 'अभी कोई upcoming appointment नहीं है।'
+                      ? 'आज आपके लिए कोई जरूरी काम pending नहीं है।'
                       : 'No upcoming appointments scheduled.'}
                   </p>
                 )}
@@ -259,11 +285,11 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
               <span className="text-xs font-black text-amber-900 uppercase tracking-wide block">
                 {isHindi ? '🤖 Saathi Suggestion' : '🤖 Saathi Suggestion'}
               </span>
-              <p className="text-sm font-bold text-slate-900 mt-0.5 leading-relaxed">
+              <p className="text-sm sm:text-base font-black text-slate-900 mt-0.5 leading-relaxed">
                 {upcomingAppointment
                   ? isHindi
-                    ? `आपकी अगली appointment ${upcomingAppointment.date.toLowerCase()} है। क्या आप उसके लिए तैयारी करना चाहेंगे?`
-                    : `Your next appointment is ${upcomingAppointment.date.toLowerCase()}. Would you like to prepare the visit checklist?`
+                    ? 'क्या आप appointment के लिए सवाल तैयार करना चाहेंगे?'
+                    : 'Would you like to prepare questions and checklist for your appointment?'
                   : isHindi
                   ? 'क्या आपके पास कोई नया मैसेज आया है जिसकी सुरक्षा आप जांचना चाहते हैं?'
                   : 'Did you receive any message or bill you want to check for safety?'}
@@ -276,15 +302,15 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
               <button
                 type="button"
                 onClick={onOpenAppointments}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs sm:text-sm transition-all min-h-[44px] shadow-xs cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm transition-all min-h-[44px] shadow-xs cursor-pointer"
               >
-                {isHindi ? 'हाँ, मदद करें' : 'Yes, Help Me'}
+                {isHindi ? 'तैयारी करें' : 'Prepare Checklist'}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={onOpenScamChecker}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs sm:text-sm transition-all min-h-[44px] shadow-xs cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm transition-all min-h-[44px] shadow-xs cursor-pointer"
               >
                 {isHindi ? 'स्कैम चेकर खोलें' : 'Open Scam Checker'}
               </button>

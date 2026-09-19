@@ -166,7 +166,7 @@ export default function App() {
   // Medicine quick actions
   const handleMarkMedicineTaken = (id: string) => {
     setMedicines((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: 'taken', takenAt: new Date().toLocaleTimeString() } : m))
+      prev.map((m) => (m.id === id ? { ...m, status: 'taken', statusTimestamp: new Date().toLocaleTimeString() } : m))
     );
     if (settings.soundEnabled) {
       speakText(
@@ -306,7 +306,11 @@ export default function App() {
     }
 
     try {
-      const data = await aiService.sendChatMessage(userText, settings.language);
+      const data = await aiService.sendChatMessage(userText, settings.language, 'general', {
+        medicines,
+        appointments,
+        currentSection: 'Dashboard',
+      });
 
       const saathiMsg: ChatMessage = {
         id: `saathi-${Date.now()}`,

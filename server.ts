@@ -114,8 +114,222 @@ Strict Persona & Behavior Rules:
    - For medical questions: remind them to consult their certified physician for actual diagnoses or dosage changes.
 `;
 
-function getEmpatheticFallback(message: string, language: string = "hi") {
-  const lower = message.toLowerCase();
+function getEmpatheticFallback(message: string, language: string = "hi", context: any = {}) {
+  const lower = message.toLowerCase().trim();
+  const medicines: any[] = Array.isArray(context?.medicines) ? context.medicines : [];
+  const appointments: any[] = Array.isArray(context?.appointments) ? context.appointments : [];
+
+  // 1. "कल क्या है?" / "What is tomorrow?" / "What is scheduled?"
+  if (
+    lower.includes("kal kya hai") ||
+    lower.includes("कल क्या") ||
+    lower.includes("what is tomorrow") ||
+    lower.includes("what's tomorrow") ||
+    lower.includes("schedule for tomorrow") ||
+    (lower.includes("tomorrow") && (lower.includes("plan") || lower.includes("any") || lower.includes("appointment")))
+  ) {
+    const tomorrowApp = appointments.find(
+      (a) => a.date?.toLowerCase()?.includes("tomorrow") || a.date?.includes("कल")
+    ) || appointments[0];
+
+    if (tomorrowApp) {
+      if (language === "en") {
+        return {
+          reply: `Tomorrow you have an appointment with ${tomorrowApp.doctorOrService} at ${tomorrowApp.time}.`,
+          steps: [
+            `Department / Specialty: ${tomorrowApp.specialty} (${tomorrowApp.location})`,
+            "Keep your previous prescription file and recent test reports ready.",
+            "Take your routine morning medicines unless advised to fast.",
+          ],
+          precautions: [
+            "Saathi reminds you of your schedule; please remember to arrive 15 minutes before your slot.",
+          ],
+        };
+      } else {
+        return {
+          reply: `कल आपकी ${tomorrowApp.doctorOrService} के साथ appointment ${tomorrowApp.time} पर है।`,
+          steps: [
+            `विभाग: ${tomorrowApp.specialty} (${tomorrowApp.location})`,
+            "अपनी पुरानी पर्चियां और हालिया टेस्ट रिपोर्ट एक फ़ाइल में रख लें।",
+            "सुबह की दवाइयाँ समय पर लें जब तक डॉक्टर ने खाली पेट रहने को न कहा हो।",
+          ],
+          precautions: [
+            "साथी आपके शेड्यूल की याद दिलाता है; कृपया समय से 15 मिनट पूर्व पहुँचें।",
+          ],
+        };
+      }
+    } else {
+      return {
+        reply: language === "en"
+          ? "There are no pending appointments scheduled for tomorrow. You are all caught up!"
+          : "कल के लिए कोई जरूरी अपॉइंटमेंट दर्ज नहीं है। आप निश्चिंत रहें!",
+        steps: [
+          language === "en"
+            ? "Check 'Today's Help' anytime on the dashboard to view your schedule."
+            : "डैशबोर्ड पर 'आज की मदद' में अपना शेड्यूल कभी भी देखें।",
+        ],
+      };
+    }
+  }
+
+  // 2. "मेरी दवा कब है?" / "When is my medicine?"
+  if (
+    lower.includes("meri dawa") ||
+    lower.includes("दवा कब") ||
+    lower.includes("dawa kab") ||
+    lower.includes("when is my medicine") ||
+    lower.includes("next medicine") ||
+    lower.includes("medicine time")
+  ) {
+    const nextMed = medicines.find((m) => m.status === 'pending') || medicines[0];
+    if (nextMed) {
+      if (language === "en") {
+        return {
+          reply: `Today your next medicine is ${nextMed.name} at ${nextMed.time}. Would you like to view details?`,
+          steps: [
+            `Dosage: ${nextMed.dosage || 'As prescribed'}`,
+            `Instructions: ${nextMed.instructions || 'Take with fresh water'}`,
+            "Tap 'Taken' in Today's Help once you take it so your record stays updated.",
+          ],
+          precautions: [
+            "Always follow your doctor's exact instructions regarding food and timings.",
+          ],
+        };
+      } else {
+        return {
+          reply: `आज आपकी अगली दवा ${nextMed.name} ${nextMed.time} पर है। क्या आप details देखना चाहते हैं?`,
+          steps: [
+            `खुराक: ${nextMed.dosage || 'डॉक्टर के निर्देशानुसार'}`,
+            `सलाह: ${nextMed.instructionsHi || nextMed.instructions || 'ताजे पानी के साथ लें'}`,
+            "दवा लेने के बाद 'आज की मदद' में 'ले ली' बटन दबाकर दर्ज करें।",
+          ],
+          precautions: [
+            "डॉक्टर द्वारा बताए गए समय व खाने के नियमों का पालन करें।",
+          ],
+        };
+      }
+    } else {
+      return {
+        reply: language === "en"
+          ? "You have no pending medicines scheduled for today. All marked complete!"
+          : "आज के लिए आपकी कोई दवा बाकी नहीं है। सभी पूरी हो चुकी हैं!",
+        steps: [],
+      };
+    }
+  }
+
+  // 3. "मुझे डॉक्टर के लिए क्या पूछना चाहिए?" / "What should I ask the doctor?"
+  if (
+    lower.includes("kya poochna") ||
+    lower.includes("क्या पूछना") ||
+    lower.includes("what should i ask") ||
+    lower.includes("questions to ask doctor") ||
+    lower.includes("doctor se kya pooche")
+  ) {
+    if (language === "en") {
+      return {
+        reply: "Here are important, comfortable questions you can ask your doctor during your visit:",
+        steps: [
+          "1. Doctor, are my current medicines and doses working well with my latest reports?",
+          "2. Should I take these before or after meals, and what should I do if I accidentally miss a dose?",
+          "3. Are there any diet, walking, or physical precautions I need to observe?",
+          "4. When should I come back for the next follow-up checkup?",
+        ],
+        precautions: [
+          "Write these down on a small paper or keep Saathi open when meeting the doctor.",
+        ],
+      };
+    } else {
+      return {
+        reply: "डॉक्टर से मिलने पर आप ये ज़रूरी और आसान सवाल पूछ सकते हैं:",
+        steps: [
+          "1. डॉक्टर साहब, क्या मेरी वर्तमान दवाइयाँ और खुराक मेरी रिपोर्ट्स के अनुसार सही चल रही हैं?",
+          "2. क्या इन दवाइयों को भोजन से पहले लेना है या बाद में, और यदि कोई खुराक छूट जाए तो क्या करें?",
+          "3. क्या मुझे खाने-पीने, नमक या टहलने में कोई खास सावधानी रखनी है?",
+          "4. अगली बार मुझे कब दोबारा चेकअप के लिए आना चाहिए?",
+        ],
+        precautions: [
+          "इन्हें एक पर्ची पर लिख लें या डॉक्टर से मिलते समय साथी में यह सूची खोलकर रखें।",
+        ],
+      };
+    }
+  }
+
+  // 4. "मुझे कल डॉक्टर के पास जाना है।" / "Mujhe kal doctor ke paas jana hai" / "I have to go to doctor tomorrow"
+  if (
+    lower.includes("kal doctor") ||
+    lower.includes("कल डॉक्टर") ||
+    lower.includes("doctor ke paas jana hai") ||
+    lower.includes("go to doctor tomorrow") ||
+    lower.includes("visit doctor tomorrow")
+  ) {
+    if (language === "en") {
+      return {
+        reply: "Certainly! I will help you prepare for your appointment so you feel completely ready.",
+        clarificationQuestion: "What time is your appointment, and which doctor or clinic are you visiting?",
+        steps: [
+          "Keep your previous prescription file and recent blood test reports in one folder.",
+          "Keep the actual medicine strips with you so the doctor can verify exact dosages.",
+          "Note down any pain, sleep issues, or symptoms you experienced recently.",
+          "Arrive 15 minutes early to register comfortably.",
+        ],
+        precautions: [
+          "Saathi helps you prepare checklists, but does not book hospital tokens directly.",
+        ],
+      };
+    } else {
+      return {
+        reply: "बिल्कुल। मैं आपकी appointment तैयार करने में मदद करता हूँ।",
+        clarificationQuestion: "आपकी अपॉइंटमेंट का समय क्या है और आप किस डॉक्टर से मिलने जा रहे हैं?",
+        steps: [
+          "पुरानी डॉक्टर की पर्ची और हालिया ब्लड टेस्ट रिपोर्ट एक फ़ाइल में रख लें।",
+          "वर्तमान में चल रही दवाइयों के पत्ते साथ रखें ताकि डॉक्टर सही पावर देख सकें।",
+          "अपनी तकलीफें या जो सवाल पूछने हैं, उन्हें एक कागज़ पर लिख लें।",
+          "अस्पताल 15 मिनट पहले पहुँचें ताकि आराम से पर्ची बन सके।",
+        ],
+        precautions: [
+          "साथी आपकी तैयारी में मदद करता है, लेकिन सीधे अस्पताल में बुकिंग नहीं करता।",
+        ],
+      };
+    }
+  }
+
+  // 5. "Appointment कैसे बनाऊँ?" / "How do I book an appointment?"
+  if (
+    lower.includes("appointment kaise") ||
+    lower.includes("अपॉइंटमेंट कैसे") ||
+    lower.includes("how to book appointment") ||
+    lower.includes("how do i book appointment") ||
+    lower.includes("appointment banana")
+  ) {
+    if (language === "en") {
+      return {
+        reply: "Let's do this together step by step in Saathi:",
+        steps: [
+          "Step 1: Write the Doctor or clinic name (e.g., Dr. Sharma).",
+          "Step 2: Choose the Date.",
+          "Step 3: Choose the Time.",
+          "Step 4: Tap 'Save Appointment' button.",
+        ],
+        precautions: [
+          "Your appointment is now saved in Saathi! Note: Saathi keeps your personal reminder and prep checklist; for hospital tokens, contact your clinic directly.",
+        ],
+      };
+    } else {
+      return {
+        reply: "चलिए इसे साथ में करते हैं:",
+        steps: [
+          "Step 1: Doctor या service का नाम लिखें (जैसे Dr. Sharma)।",
+          "Step 2: Date चुनें।",
+          "Step 3: Time चुनें।",
+          "Step 4: 'Save Appointment' दबाएँ।",
+        ],
+        precautions: [
+          "Appointment आपके Saathi में save हो गई है! (सूचना: साथी आपकी याददाश्त व चेकलिस्ट के लिए है; अस्पताल में नंबर क्लिनिक से ही लगता है)।",
+        ],
+      };
+    }
+  }
 
   if (lower.includes("doctor") || lower.includes("डॉक्टर") || lower.includes("hospital") || lower.includes("appointment") || lower.includes("bimar")) {
     if (language === "en") {
@@ -305,20 +519,24 @@ function getDocumentExplainerFallback(text: string, language: string = "hi") {
     return {
       simpleExplanation:
         language === "en"
-          ? "This document is related to your annual Pension Digital Life Certificate (Jeevan Pramaan). Every pensioner submits this once a year to keep their monthly pension active."
-          : "यह पत्र आपकी वार्षिक पेंशन के जीवन प्रमाण पत्र (Jeevan Pramaan) के बारे में है। पेंशन चालू रखने के लिए हर साल यह प्रमाण पत्र जमा करना अनिवार्य होता है।",
+          ? "This information in simple words: This document is related to your annual Pension Digital Life Certificate (Jeevan Pramaan). Every pensioner submits this once a year to keep their monthly pension active."
+          : "यह जानकारी सरल शब्दों में: यह पत्र आपकी वार्षिक पेंशन के जीवन प्रमाण पत्र (Jeevan Pramaan) के बारे में है। पेंशन चालू रखने के लिए हर साल यह प्रमाण पत्र जमा करना अनिवार्य होता है।",
       importantThings:
         language === "en"
           ? [
-              "Annual Deadline: Usually between October 1 and November 30.",
+              "Annual submission requirement for all pensioners.",
               "Required items: Aadhaar Card, PPO (Pension Payment Order) Number, and Bank Passbook.",
               "Doorstep Service: Postman can come to your home with a biometric device to complete it for ₹50–₹70.",
             ]
           : [
-              "जमा करने का समय: आमतौर पर 1 अक्टूबर से 30 नवंबर के बीच।",
+              "सभी पेंशनभोगियों के लिए वार्षिक जमा की आवश्यकता।",
               "ज़रूरी कागज़ात: आधार कार्ड, PPO नंबर और बैंक पासबुक।",
               "घर बैठे सुविधा: डाकिया घर आकर बायोमेट्रिक मशीन से डिजिटल प्रमाण पत्र बना देता है (मात्र ₹50-₹70 शुल्क)।",
             ],
+      importantDates:
+        language === "en"
+          ? ["Annual Deadline: Usually between October 1 and November 30."]
+          : ["जमा करने का समय: आमतौर पर 1 अक्टूबर से 30 नवंबर के बीच।"],
       difficultWords: [
         {
           term: "PPO Number",
@@ -341,6 +559,24 @@ function getDocumentExplainerFallback(text: string, language: string = "hi") {
               "अपने क्षेत्र के पोस्टमैन से संपर्क करें या डाकघर जाएं।",
               "प्रमाण पत्र बनने के बाद मोबाइल पर आए पुष्टिकरण SMS को सुरक्षित रखें।",
             ],
+      precautions:
+        language === "en"
+          ? ["Do not pay more than the nominal government fee (₹50-₹70) to the postman."]
+          : ["डाकिए को केवल निर्धारित सरकारी शुल्क ₹50-₹70 ही दें, कोई अन्य राशि न दें।"],
+      sourceBreakdown: {
+        foundInText: [
+          language === "en" ? "Pension certificate submission instructions" : "पेंशन प्रमाण पत्र जमा करने के निर्देश",
+        ],
+        aiExplanation:
+          language === "en"
+            ? "Saathi simplified summary structured for senior pensioners."
+            : "साथी द्वारा वरिष्ठ नागरिकों के लिए तैयार की गई आसान व्याख्या।",
+        missingOrUncertain: [
+          language === "en"
+            ? "Your specific bank branch working hours; please check locally if visiting in person."
+            : "आपकी बैंक शाखा के खुलने का समय; व्यक्तिगत जाने पर स्थानीय समय की जांच कर लें।",
+        ],
+      },
       safetyDisclaimer:
         "Saathi provides this AI summary for informational guidance. It does not replace official pension board or bank rules. For formal changes, please consult your pension disbursing authority.",
     };
@@ -349,20 +585,22 @@ function getDocumentExplainerFallback(text: string, language: string = "hi") {
   return {
     simpleExplanation:
       language === "en"
-        ? "This notice summarizes your essential instructions, payment terms, or health summary in plain words."
-        : "यह दस्तावेज़ आपके लिए ज़रूरी निर्देशों, भुगतान की शर्तों या स्वास्थ्य सारांश को आसान शब्दों में समझाता है।",
+        ? "This information in simple words: This notice summarizes your essential instructions, payment terms, or health summary in plain words."
+        : "यह जानकारी सरल शब्दों में: यह दस्तावेज़ आपके लिए ज़रूरी निर्देशों, भुगतान की शर्तों या स्वास्थ्य सारांश को आसान शब्दों में समझाता है।",
     importantThings:
       language === "en"
         ? [
-            "Check for any due date or follow-up doctor date.",
-            "Verify the exact payable amount or test name.",
-            "Keep the original copy in your home file.",
+            "Verify the exact payable amount, department, or test name.",
+            "Keep the original physical document safe in your home file.",
           ]
         : [
-            "अंतिम तारीख (Due Date) या डॉक्टर से दोबारा मिलने की तारीख ध्यान से देखें।",
-            "कुल देय राशि (Net Payable) या टेस्ट का नाम जांचें।",
+            "कुल देय राशि, संबंधित विभाग या टेस्ट का नाम जांचें।",
             "कागज़ की मूल प्रति (Original Copy) को अपनी सुरक्षित फ़ाइल में रखें।",
           ],
+    importantDates:
+      language === "en"
+        ? ["Check the document for due date, validity period, or doctor visit date."]
+        : ["दस्तावेज़ पर अंकित अंतिम तारीख (Due Date) या डॉक्टर से मिलने की तारीख ध्यान से देखें।"],
     difficultWords: [
       {
         term: "Net Payable / देय राशि",
@@ -376,13 +614,31 @@ function getDocumentExplainerFallback(text: string, language: string = "hi") {
     actionSteps:
       language === "en"
         ? [
-            "Keep this document in your safe folder.",
-            "If any payment is required, use authorized bank counters or official apps.",
+            "Keep this document in your safe home folder.",
+            "If any payment is required, use authorized bank counters or official apps only.",
           ]
         : [
             "इस कागज़ को अपनी संभाल कर रखी जाने वाली फ़ाइल में रखें।",
             "भुगतान के लिए केवल आधिकारिक बैंक काउंटर या वैध माध्यम का ही उपयोग करें।",
           ],
+    precautions:
+      language === "en"
+        ? ["Never share OTP or banking passwords with anyone demanding payment over phone."]
+        : ["फोन पर भुगतान मांगने वाले किसी भी व्यक्ति को OTP या बैंक पासवर्ड कभी न दें।"],
+    sourceBreakdown: {
+      foundInText: [
+        language === "en" ? "Information clearly stated in the provided text." : "दिए गए दस्तावेज़ में उल्लिखित निर्देश एवं आंकड़े।",
+      ],
+      aiExplanation:
+        language === "en"
+          ? "Clear simplification to assist senior readability."
+          : "वरिष्ठ नागरिकों की सुविधा के लिए सरल भाषा में की गई व्याख्या।",
+      missingOrUncertain: [
+        language === "en"
+          ? "Any unmentioned personal account numbers or unverified contact numbers."
+          : "दस्तावेज़ में न दिए गए व्यक्तिगत खाते या असत्यापित संपर्क नंबर।",
+      ],
+    },
     safetyDisclaimer:
       "Saathi provides this AI summary for informational guidance. It does not replace professional medical, legal, or financial advice.",
   };
@@ -478,10 +734,21 @@ app.post("/api/saathi/chat", async (req, res) => {
     }
 
     const message = sanitizeText(rawMessage, 2000);
+    const context = req.body?.context || {};
+    const medicines: any[] = Array.isArray(context.medicines) ? context.medicines : [];
+    const appointments: any[] = Array.isArray(context.appointments) ? context.appointments : [];
+
+    const medSummary = medicines.length > 0
+      ? medicines.map((m: any) => `- ${m.name}: ${m.time} (Status: ${m.status || 'pending'})`).join('\n')
+      : 'No medicines recorded';
+
+    const appSummary = appointments.length > 0
+      ? appointments.map((a: any) => `- ${a.doctorOrService}: ${a.date} at ${a.time} (Specialty: ${a.specialty || 'General'}, Location: ${a.location || 'Clinic'})`).join('\n')
+      : 'No appointments recorded';
 
     const ai = getGenAI();
     if (!ai) {
-      const fallback = getEmpatheticFallback(message, language);
+      const fallback = getEmpatheticFallback(message, language, context);
       return res.json({
         ...fallback,
         source: "local-companion",
@@ -493,13 +760,28 @@ A senior citizen asked: "${message}"
 Preferred language: ${language === "en" ? "English" : "Hindi / Hinglish"}
 Mode: ${mode}
 
+Current Senior Citizen Local Data:
+Upcoming Appointments:
+${appSummary}
+
+Today's Medicines:
+${medSummary}
+
 Instructions:
-1. Respond with warm empathy, patience, and high respect.
-2. If the user is expressing anger or frustration (e.g. at a bank, technology, or hospital), remain completely calm, validate their feelings respectfully, and offer simple, clear step-by-step guidance.
-3. If the prompt is brief or an announcement like "Mujhe kal doctor ke paas jana hai", warmheartedly acknowledge it, offer to prepare them, and ask an essential clarification question (e.g. asking for the appointment time or doctor's specialty).
-4. Provide 2-4 easy, structured step-by-step points.
-5. If this is a medical or appointment query, add a gentle reminder that you are preparing notes for them and that real hospital booking must be confirmed directly with the clinic.
-6. Format your output clearly so an elderly person can read or listen comfortably.
+1. Respond with warm empathy, patience, and high respect. Keep language simple and calm.
+2. Context-Awareness Rules:
+   - If the user asks "कल क्या है?" or "What is tomorrow?", inspect the user's appointments list above. If an appointment exists for tomorrow or upcoming, give the exact appointment: e.g. "कल आपकी Dr. Sharma के साथ appointment 11:30 AM पर है।" Do NOT give a vague answer.
+   - If the user asks "मेरी दवा कब है?" or "When is my medicine?", check the medicines list above and give the exact time and medicine name: e.g. "आज आपकी अगली दवा [Name] [Time] पर है। क्या आप details देखना चाहते हैं?"
+   - If the user asks "मुझे डॉक्टर के लिए क्या पूछना चाहिए?", produce a clear, practical numbered list of 4 questions to ask their doctor.
+   - If the user says "मुझे कल डॉक्टर के पास जाना है।", acknowledge with: "बिल्कुल। मैं आपकी appointment तैयार करने में मदद करता हूँ।" followed by 3-4 prep checklist points.
+   - If the user asks "Appointment कैसे बनाऊँ?", guide them step-by-step:
+     Step 1: Doctor या service का नाम लिखें।
+     Step 2: Date चुनें।
+     Step 3: Time चुनें।
+     Step 4: 'Save Appointment' दबाएँ।
+     Clarify that "Appointment Saathi में save हो गई है।" (Saathi keeps their personal reminder, not clinic tokens).
+3. If the user is expressing anger or frustration (e.g. at a bank, technology, or hospital), remain completely calm, validate their feelings respectfully, and offer simple, clear step-by-step guidance.
+4. Format your output clearly so an elderly person can read or listen comfortably.
 `;
 
     const response = await withTimeout(
@@ -508,7 +790,7 @@ Instructions:
         contents: prompt,
         config: {
           systemInstruction: SENIOR_COMPANION_SYSTEM_PROMPT,
-          temperature: 0.5,
+          temperature: 0.4,
         },
       }),
       15000
@@ -521,7 +803,7 @@ Instructions:
     });
   } catch (error: any) {
     console.error("Chat error:", error?.message || "Internal error");
-    const fallback = getEmpatheticFallback(req.body?.message || "", req.body?.language || "hi");
+    const fallback = getEmpatheticFallback(req.body?.message || "", req.body?.language || "hi", req.body?.context || {});
     return res.json({
       ...fallback,
       source: "fallback",
@@ -637,7 +919,7 @@ app.post("/api/saathi/explain-document", async (req, res) => {
     }
 
     const prompt = `
-A senior citizen needs help understanding this official notice, hospital discharge bill, or government document:
+A senior citizen needs help understanding this official notice, hospital discharge bill, pension paper, or government document:
 "${text}"
 
 Language of output: ${language === "en" ? "English" : "Hindi (Devanagari script)"}
@@ -645,15 +927,28 @@ Language of output: ${language === "en" ? "English" : "Hindi (Devanagari script)
 CRITICAL RULES:
 1. Explain it simply without complex legal, tax, or medical jargon.
 2. For high-risk topics (hospital bills, taxes, legal notices), clearly advise consulting the appropriate certified professional.
-3. Return pure valid JSON only, without any markdown formatting or code fences.
+3. Do NOT invent information that is not present in the source text.
+4. Clearly distinguish:
+   - Information explicitly found in the text
+   - AI explanation/simplification
+   - Missing or uncertain details
+5. Return pure valid JSON only, without markdown formatting or code fences.
+
 Format:
 {
-  "simpleExplanation": "2-3 clear, compassionate sentences explaining what this document is about in everyday words",
-  "importantThings": ["Key date, deadline, or amount 1", "Key thing 2", "Key thing 3"],
+  "simpleExplanation": "${language === 'en' ? 'This information in simple words: 2-3 clear sentences explaining what this document is about' : 'यह जानकारी सरल शब्दों में: 2-3 स्पष्ट और सरल वाक्य जो वरिष्ठ नागरिक को समझ आएं'}",
+  "importantThings": ["Key highlight 1", "Key highlight 2"],
+  "importantDates": ["Key deadline or date 1"],
+  "actionSteps": ["What the senior citizen should do step 1", "Step 2"],
+  "precautions": ["Important caution or warning for safety"],
   "difficultWords": [
     { "term": "Jargon Term", "explanation": "Simple plain language meaning" }
   ],
-  "actionSteps": ["What the senior should do step 1", "Step 2", "Step 3"],
+  "sourceBreakdown": {
+    "foundInText": ["Direct facts explicitly stated in this text"],
+    "aiExplanation": "How Saathi simplified this for senior citizen clarity",
+    "missingOrUncertain": ["Key information not stated in the source text (e.g., account specific numbers or deadlines)"]
+  },
   "safetyDisclaimer": "Saathi provides this AI-powered summary for easier understanding only. It does not replace professional medical, legal, or financial advice. Please verify with a certified authority."
 }
 `;
@@ -680,10 +975,13 @@ Format:
     }
 
     return res.json({
-      simpleExplanation: parsed.simpleExplanation || "This document outlines your notice requirements.",
+      simpleExplanation: parsed.simpleExplanation || (language === 'en' ? "This information in simple words: Here is your summary." : "यह जानकारी सरल शब्दों में: यहाँ आपका सारांश है।"),
       importantThings: Array.isArray(parsed.importantThings) ? parsed.importantThings : [],
-      difficultWords: Array.isArray(parsed.difficultWords) ? parsed.difficultWords : [],
+      importantDates: Array.isArray(parsed.importantDates) ? parsed.importantDates : [],
       actionSteps: Array.isArray(parsed.actionSteps) ? parsed.actionSteps : [],
+      precautions: Array.isArray(parsed.precautions) ? parsed.precautions : [],
+      difficultWords: Array.isArray(parsed.difficultWords) ? parsed.difficultWords : [],
+      sourceBreakdown: parsed.sourceBreakdown && typeof parsed.sourceBreakdown === 'object' ? parsed.sourceBreakdown : undefined,
       safetyDisclaimer: parsed.safetyDisclaimer || "Saathi provides this AI-powered summary for easier understanding only. It does not replace professional medical, legal, or financial advice.",
       source: "gemini",
     });

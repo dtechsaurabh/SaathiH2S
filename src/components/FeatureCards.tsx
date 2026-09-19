@@ -26,31 +26,31 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({
 
   const actions = [
     {
-      id: 'doctor' as const,
-      icon: <Stethoscope className="w-8 h-8 text-emerald-700" />,
-      emoji: '🩺',
-      title: isHindi ? 'Doctor & Appointments' : 'Doctor & Appointments',
-      description: isHindi ? 'Appointment संभालें' : 'Manage visits & doctor appointments',
-      bgClass: 'bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-300',
-      tagColor: 'text-emerald-800 bg-emerald-100',
-      action: () => onSelectFeature('doctor'),
-    },
-    {
       id: 'medicine' as const,
       icon: <Pill className="w-8 h-8 text-amber-700" />,
       emoji: '💊',
-      title: isHindi ? 'Medicines' : 'Medicines',
-      description: isHindi ? 'दवाइयों के reminders' : 'Medicine schedule & reminders',
+      title: isHindi ? 'दवाइयाँ याद रखें' : 'Remember Medicines',
+      description: isHindi ? 'दवाइयों का समय, खुराक और ट्रैकिंग' : 'Medicine timings, doses & daily tracking',
       bgClass: 'bg-amber-50/70 hover:bg-amber-100/80 border-amber-300',
       tagColor: 'text-amber-800 bg-amber-100',
       action: () => onSelectFeature('medicine'),
     },
     {
+      id: 'doctor' as const,
+      icon: <Stethoscope className="w-8 h-8 text-emerald-700" />,
+      emoji: '🩺',
+      title: isHindi ? 'Appointment संभालें' : 'Manage Appointments',
+      description: isHindi ? 'डॉक्टर विजिट, चेकलिस्ट व पूछने वाले सवाल' : 'Doctor visits, questions & prep checklist',
+      bgClass: 'bg-emerald-50/70 hover:bg-emerald-100/80 border-emerald-300',
+      tagColor: 'text-emerald-800 bg-emerald-100',
+      action: () => onSelectFeature('doctor'),
+    },
+    {
       id: 'scam' as const,
       icon: <ShieldAlert className="w-8 h-8 text-rose-700" />,
       emoji: '🚨',
-      title: isHindi ? 'Scam Checker' : 'Scam Checker',
-      description: isHindi ? 'संदिग्ध message जाँचें' : 'Check suspicious SMS, WhatsApp or calls',
+      title: isHindi ? 'संदिग्ध message समझें' : 'Check Suspicious Messages',
+      description: isHindi ? 'धोखाधड़ी, फर्जी बिजली बिल व बैंक SMS की जांच' : 'Detect fake bills, KYC threats & scam SMS',
       bgClass: 'bg-rose-50/70 hover:bg-rose-100/80 border-rose-300',
       tagColor: 'text-rose-800 bg-rose-100',
       action: () => onSelectFeature('scam'),
@@ -59,20 +59,20 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({
       id: 'document' as const,
       icon: <FileText className="w-8 h-8 text-purple-700" />,
       emoji: '📄',
-      title: isHindi ? 'समझाएँ (Explain Info)' : 'Explain Information',
-      description: isHindi ? 'कठिन जानकारी आसान करें' : 'Simplify documents, bills & letters',
+      title: isHindi ? 'मुश्किल जानकारी आसान करें' : 'Simplify Difficult Info',
+      description: isHindi ? 'पेंशन, सरकारी नोटिस व अस्पताल बिल सरल शब्दों में' : 'Simplify pension, legal & hospital notices',
       bgClass: 'bg-purple-50/70 hover:bg-purple-100/80 border-purple-300',
       tagColor: 'text-purple-800 bg-purple-100',
       action: () => onSelectFeature('document'),
     },
     {
       id: 'voice' as const,
-      icon: <Mic className="w-8 h-8 text-amber-600" />,
-      emoji: '🎤',
-      title: isHindi ? 'Saathi से बात करें' : 'Talk to Saathi',
-      description: isHindi ? 'अपनी बात बताइए' : 'Ask questions or talk freely',
-      bgClass: 'bg-amber-100/70 hover:bg-amber-200/80 border-amber-400',
-      tagColor: 'text-amber-900 bg-amber-200',
+      icon: <Mic className="w-8 h-8 text-sky-700" />,
+      emoji: '🤝',
+      title: isHindi ? 'हर कदम पर आसान guidance पाएँ' : 'Step-by-Step Guidance',
+      description: isHindi ? 'बोलकर या लिखकर शांत व सुरक्षित डिजिटल सहायता' : 'Speak or type for calm digital assistance',
+      bgClass: 'bg-sky-50/70 hover:bg-sky-100/80 border-sky-300',
+      tagColor: 'text-sky-800 bg-sky-100',
       action: () => {
         if (onOpenVoiceModal) {
           onOpenVoiceModal();
@@ -91,12 +91,12 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({
           id="main-actions-heading"
           className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight"
         >
-          {isHindi ? 'मैं आपकी किस तरह मदद करूँ?' : 'How can I help you today?'}
+          {isHindi ? 'Saathi आपके लिए क्या कर सकता है?' : 'What Saathi Can Do For You'}
         </h3>
         <p className="text-sm font-semibold text-slate-600 mt-1">
           {isHindi
-            ? 'किसी भी विकल्प पर क्लिक करके सीधे शुरू करें'
-            : 'Select any option below to get simple, guided assistance'}
+            ? 'सरल, सुरक्षित और आपकी सुविधा के अनुसार तैयार किए गए खास टूल्स'
+            : 'Simple, secure, and respectful tools designed especially for seniors'}
         </p>
       </div>
 

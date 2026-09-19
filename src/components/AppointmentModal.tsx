@@ -463,9 +463,16 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                       <span className="text-xs font-black uppercase text-sky-800 tracking-wider">
                         🩺 {app.specialty}
                       </span>
-                      <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
-                        {app.doctorOrService}
-                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
+                          {app.doctorOrService}
+                        </h3>
+                        {app.isDemo && (
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-300">
+                            Demo Data
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 self-start sm:self-center">
                       <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-100 text-sky-900 border border-sky-300">

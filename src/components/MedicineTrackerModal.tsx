@@ -359,6 +359,11 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
                               <h4 className="text-base sm:text-lg font-black text-slate-900">
                                 {med.name}
                               </h4>
+                              {med.isDemo && (
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-300">
+                                  Demo Data
+                                </span>
+                              )}
                               {isTaken && (
                                 <span className="text-xs font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300">
                                   ✓ {isHindi ? 'ली गई' : 'Taken'}

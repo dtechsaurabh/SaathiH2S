@@ -111,9 +111,16 @@ export interface ScamAnalysisResult {
 export interface DocumentAnalysisResult {
   simpleExplanation: string;
   importantThings: string[];
-  difficultWords: Array<{ term: string; explanation: string }>;
+  importantDates?: string[];
   actionSteps: string[];
+  precautions?: string[];
+  difficultWords: Array<{ term: string; explanation: string }>;
   safetyDisclaimer: string;
+  sourceBreakdown?: {
+    foundInText: string[];
+    aiExplanation: string;
+    missingOrUncertain: string[];
+  };
 }
 
 export interface AppointmentPrepResult {
