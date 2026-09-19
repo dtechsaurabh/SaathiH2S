@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   FileText,
@@ -52,6 +52,17 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DocumentAnalysisResult | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
   const isHindi = language === 'hi';
@@ -125,8 +136,8 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            aria-label={isHindi ? 'बंद करें' : 'Close'}
-            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-sky-400"
+            aria-label={isHindi ? 'कागज़ात समझें बंद करें' : 'Close document explainer'}
+            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-sky-400 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6" />
           </button>
@@ -144,7 +155,7 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => handleSelectSample(doc.text)}
-                className="p-2.5 rounded-xl border-2 border-slate-200 hover:border-sky-300 bg-slate-50 hover:bg-sky-50/50 text-left transition-all text-xs font-semibold text-slate-800 flex items-center justify-between group focus:ring-4 focus:ring-sky-300"
+                className="p-3 rounded-xl border-2 border-slate-200 hover:border-sky-300 bg-slate-50 hover:bg-sky-50/50 text-left transition-all text-xs font-semibold text-slate-800 flex items-center justify-between group focus:ring-4 focus:ring-sky-300 min-h-[44px] cursor-pointer"
               >
                 <span className="line-clamp-2">{isHindi ? doc.titleHi : doc.titleEn}</span>
                 <span className="text-[11px] text-sky-600 font-bold shrink-0 ml-1">
@@ -165,6 +176,8 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
               id="doc-input-text"
               rows={4}
               value={inputText}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'doc-error-alert' : undefined}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={
                 isHindi
@@ -177,7 +190,8 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setInputText('')}
-                className="absolute top-3 right-3 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded-md font-bold"
+                aria-label={isHindi ? 'पाठ साफ करें' : 'Clear document text'}
+                className="absolute top-3 right-3 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg font-bold min-h-[44px] flex items-center"
               >
                 {isHindi ? 'साफ करें' : 'Clear'}
               </button>
@@ -191,7 +205,7 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
             type="button"
             disabled={loading}
             onClick={() => handleExplain()}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-base shadow-lg shadow-sky-600/20 disabled:opacity-60 flex items-center justify-center gap-2 transition-all focus:ring-4 focus:ring-sky-300"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-base shadow-lg shadow-sky-600/20 disabled:opacity-60 flex items-center justify-center gap-2 transition-all focus:ring-4 focus:ring-sky-300 min-h-[50px] cursor-pointer"
           >
             {loading ? (
               <>
@@ -212,7 +226,12 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
 
         {/* Error State */}
         {error && (
-          <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 flex items-center justify-between gap-3">
+          <div
+            id="doc-error-alert"
+            role="alert"
+            aria-live="polite"
+            className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 flex items-center justify-between gap-3"
+          >
             <div className="flex items-center gap-2 text-sm font-bold">
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
               <span>{error}</span>
@@ -220,7 +239,7 @@ export const DocumentExplainerModal: React.FC<DocumentExplainerModalProps> = ({
             <button
               type="button"
               onClick={() => handleExplain()}
-              className="px-3 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 font-extrabold text-xs shrink-0"
+              className="px-4 py-2 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 font-extrabold text-xs shrink-0 min-h-[44px] flex items-center"
             >
               {isHindi ? 'दोबारा करें' : 'Retry'}
             </button>

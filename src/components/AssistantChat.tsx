@@ -114,7 +114,8 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
           <button
             type="button"
             onClick={onOpenVoiceModal}
-            className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors cursor-pointer min-h-[40px] focus-visible:ring-4 focus-visible:ring-amber-300"
+            aria-label={isHindi ? 'बोलकर पूछें (माइक खोलें)' : 'Speak to Saathi (Open microphone)'}
+            className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors cursor-pointer min-h-[44px] focus-visible:ring-4 focus-visible:ring-amber-300"
           >
             <Mic className="w-4 h-4" />
             <span>{isHindi ? 'बोलकर बताएं' : 'Voice'}</span>
@@ -122,7 +123,12 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
         </div>
 
         {/* Chat Messages */}
-        <div className="p-4 sm:p-6 space-y-4 max-h-[500px] overflow-y-auto bg-slate-50/60">
+        <div
+          role="log"
+          aria-live="polite"
+          aria-label={isHindi ? 'बातचीत के संदेश' : 'Conversation messages'}
+          className="p-4 sm:p-6 space-y-4 max-h-[500px] overflow-y-auto bg-slate-50/60"
+        >
           {/* Welcome Greeting from Saathi if only 0 or 1 message */}
           {messages.length === 0 && (
             <div className="flex items-start gap-3">
@@ -171,10 +177,11 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSpeak(msg)}
-                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-amber-700"
+                        aria-label={isHindi ? 'यह संदेश बोलकर सुनें' : 'Read this message aloud'}
+                        className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-amber-700 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-4 focus-visible:ring-amber-400"
                         title={isHindi ? 'आवाज़ में सुनें' : 'Listen'}
                       >
-                        <Volume2 className="w-4 h-4" />
+                        <Volume2 className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -205,10 +212,10 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
                       <button
                         type="button"
                         onClick={() => onSelectFeature(msg.actionLink!.feature)}
-                        className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm inline-flex items-center gap-1.5"
+                        className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm inline-flex items-center gap-1.5 min-h-[44px]"
                       >
                         <span>{isHindi ? msg.actionLink.labelHi : msg.actionLink.label}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                   )}
@@ -219,7 +226,11 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
 
           {/* Calm Loading State: "Saathi सोच रहा है..." */}
           {isLoading && (
-            <div className="flex gap-2.5 items-start">
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex gap-2.5 items-start"
+            >
               <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center font-bold text-base shrink-0">
                 🤝
               </div>
@@ -238,7 +249,7 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
         {/* Input Form & Suggested Prompts */}
         <div className="p-4 sm:p-5 bg-white border-t border-slate-200 space-y-3">
           {/* Suggested prompts above the input */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <span className="text-xs font-bold text-slate-500 shrink-0 mr-1">
               💡 {isHindi ? 'सुझाव:' : 'Tips:'}
             </span>
@@ -247,7 +258,7 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => setInputText(prompt)}
-                className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-amber-100 text-slate-800 hover:text-amber-950 font-bold text-xs border border-slate-200 shrink-0 transition-colors whitespace-nowrap cursor-pointer"
+                className="px-3.5 py-2.5 rounded-full bg-slate-100 hover:bg-amber-100 text-slate-800 hover:text-amber-950 font-bold text-xs sm:text-sm border border-slate-200 shrink-0 transition-colors whitespace-nowrap cursor-pointer min-h-[44px] flex items-center"
               >
                 "{prompt}"
               </button>
@@ -260,6 +271,7 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
               id="senior-chat-input"
               type="text"
               value={inputText}
+              aria-label={isHindi ? 'Saathi से बात करने के लिए संदेश लिखें' : 'Type message to chat with Saathi'}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={
                 isHindi
@@ -272,8 +284,9 @@ export const AssistantChat: React.FC<AssistantChatProps> = ({
             <button
               id="submit-chat-query"
               type="submit"
+              aria-label={isHindi ? 'संदेश भेजें' : 'Send message'}
               disabled={!inputText.trim() || isLoading}
-              className="px-6 sm:px-8 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black text-base shadow-xs flex items-center gap-2 transition-all min-h-[52px] cursor-pointer"
+              className="px-6 sm:px-8 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black text-base shadow-xs flex items-center gap-2 transition-all min-h-[52px] cursor-pointer focus-visible:ring-4 focus-visible:ring-amber-400"
             >
               <span>{isHindi ? 'भेजें' : 'Send'}</span>
               <Send className="w-4 h-4" />

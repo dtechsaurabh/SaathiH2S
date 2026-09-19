@@ -9,9 +9,41 @@
 }
 
 /* Accessible focus rings for seniors */
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: 3px solid #0284c7;
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid #d97706;
   outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.35);
+}
+
+/* Reduced Motion Override for seniors who experience vestibular discomfort */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.motion-reduce,
+.motion-reduce * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* High Contrast mode enhancements */
+.high-contrast {
+  color: #ffffff !important;
+  background-color: #000000 !important;
+}
+
+.high-contrast button,
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast [role="dialog"] {
+  border-color: #f59e0b !important;
 }
 
 /* Smooth pulse for active audio listening */
@@ -29,4 +61,5 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .animate-soft-pulse {
   animation: soft-pulse 2s ease-in-out infinite;
 }
+
 

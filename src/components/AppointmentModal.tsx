@@ -54,6 +54,18 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const notificationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSubmittingRef = useRef(false);
 
+  // Keyboard Escape listener
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Clean up any pending notification timeout on unmount
   useEffect(() => {
     return () => {
@@ -282,8 +294,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            aria-label={isHindi ? 'बंद करें' : 'Close'}
-            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-sky-400"
+            aria-label={isHindi ? 'अपॉइंटमेंट बंद करें' : 'Close appointments'}
+            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-sky-400 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6" />
           </button>
@@ -291,7 +303,11 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
         {/* Notification message toast */}
         {notificationMsg && (
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs sm:text-sm font-bold flex items-center gap-2">
+          <div
+            role="status"
+            aria-live="polite"
+            className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs sm:text-sm font-bold flex items-center gap-2"
+          >
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{notificationMsg}</span>
           </div>
@@ -314,8 +330,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           <button
             type="button"
             onClick={onResetDemo}
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 min-h-[44px]"
             title={isHindi ? 'डेमो अपॉइंटमेंट वापस लाएं' : 'Reset sample visits'}
+            aria-label={isHindi ? 'डेमो अपॉइंटमेंट रीसेट करें' : 'Reset demo appointments'}
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{isHindi ? 'डेमो रीसेट' : 'Reset Demo'}</span>
@@ -338,20 +355,31 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             </h3>
 
             {formError && (
-              <div className="p-2.5 rounded-xl bg-rose-100 text-rose-900 font-bold text-xs">
+              <div
+                id="app-form-error"
+                role="alert"
+                aria-live="polite"
+                className="p-2.5 rounded-xl bg-rose-100 text-rose-900 font-bold text-xs"
+              >
                 {formError}
               </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
+                <label htmlFor="app-doctor-name" className="text-xs font-bold text-slate-700 block mb-1">
                   {isHindi ? 'डॉक्टर या अस्पताल का नाम*' : 'Doctor / Hospital Name*'}
                 </label>
                 <input
+                  id="app-doctor-name"
                   type="text"
                   value={doctorName}
-                  onChange={(e) => setDoctorName(e.target.value)}
+                  aria-invalid={Boolean(formError)}
+                  aria-describedby={formError ? 'app-form-error' : undefined}
+                  onChange={(e) => {
+                    setDoctorName(e.target.value);
+                    if (formError) setFormError(null);
+                  }}
                   placeholder={isHindi ? 'उदा: Dr. Sharma' : 'E.g., Dr. Sharma'}
                   className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-sky-600 min-h-[44px]"
                 />
@@ -531,14 +559,16 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleConfirmDelete(app.id)}
-                          className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-black text-xs min-h-[36px]"
+                          aria-label={isHindi ? `${app.doctorOrService} अपॉइंटमेंट हटाना सुनिश्चित करें` : `Confirm delete appointment with ${app.doctorOrService}`}
+                          className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs sm:text-sm min-h-[44px]"
                         >
                           {isHindi ? 'हाँ, हटाएँ' : 'Yes, Delete'}
                         </button>
                         <button
                           type="button"
                           onClick={() => setDeleteConfirmAppId(null)}
-                          className="px-3.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs min-h-[36px]"
+                          aria-label={isHindi ? 'हटाना रद्द करें' : 'Cancel deletion'}
+                          className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm min-h-[44px]"
                         >
                           {isHindi ? 'रद्द करें' : 'Cancel'}
                         </button>
@@ -554,7 +584,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handlePrepareAppointment(app)}
-                          className="px-3.5 py-2 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs min-h-[40px] cursor-pointer"
+                          aria-label={isSelected ? (isHindi ? `${app.doctorOrService} तैयारी विवरण बंद करें` : `Hide details for ${app.doctorOrService}`) : (isHindi ? `${app.doctorOrService} तैयारी विवरण देखें` : `View details and prep for ${app.doctorOrService}`)}
+                          className="px-3.5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-sky-400"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           <span>{isSelected ? (isHindi ? 'विवरण बंद करें' : 'Hide Details') : (isHindi ? 'विवरण' : 'Details')}</span>
@@ -564,7 +595,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleSetReminder(app)}
-                          className="px-3 py-2 rounded-xl bg-white hover:bg-sky-50 text-sky-900 border border-sky-300 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[40px] cursor-pointer"
+                          aria-label={isHindi ? `${app.doctorOrService} अपॉइंटमेंट का रिमाइंडर सेट करें` : `Set reminder for ${app.doctorOrService}`}
+                          className="px-3 py-2.5 rounded-xl bg-white hover:bg-sky-50 text-sky-900 border border-sky-300 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-sky-400"
                         >
                           <BellRing className="w-3.5 h-3.5 text-sky-700" />
                           <span>{isHindi ? 'Reminder' : 'Reminder'}</span>
@@ -574,7 +606,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleStartEdit(app)}
-                          className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[40px] cursor-pointer"
+                          aria-label={isHindi ? `${app.doctorOrService} अपॉइंटमेंट संपादित करें` : `Edit appointment with ${app.doctorOrService}`}
+                          className="px-3 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-slate-400"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                           <span>{isHindi ? 'Edit' : 'Edit'}</span>
@@ -585,7 +618,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmAppId(app.id)}
-                        className="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-rose-200 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[40px] cursor-pointer ml-auto"
+                        aria-label={isHindi ? `${app.doctorOrService} अपॉइंटमेंट हटाएं` : `Delete appointment with ${app.doctorOrService}`}
+                        className="px-3 py-2.5 rounded-xl bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-rose-200 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[44px] cursor-pointer ml-auto focus-visible:ring-4 focus-visible:ring-rose-400"
                         title={isHindi ? 'हटाएँ' : 'Delete'}
                       >
                         <Trash2 className="w-3.5 h-3.5" />

@@ -161,6 +161,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => onMarkMedTaken(nextMedicine.id)}
+                    aria-label={isHindi ? `${nextMedicine.name} दवाई ले ली चिह्नित करें` : `Mark ${nextMedicine.name} as taken`}
                     className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all min-h-[44px] focus-visible:ring-4 focus-visible:ring-emerald-400 cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
@@ -170,6 +171,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => onMarkMedSkipped && onMarkMedSkipped(nextMedicine.id)}
+                    aria-label={isHindi ? `${nextMedicine.name} दवाई छोड़ें चिह्नित करें` : `Mark ${nextMedicine.name} as skipped`}
                     className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-extrabold text-xs sm:text-sm border border-slate-300 transition-all min-h-[44px] focus-visible:ring-4 focus-visible:ring-slate-400 cursor-pointer"
                   >
                     <span>{isHindi ? 'छोड़ें' : 'Skip'}</span>
@@ -178,7 +180,8 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                   <button
                     type="button"
                     onClick={onOpenMedicineTracker}
-                    className="px-3 py-2.5 rounded-xl bg-white hover:bg-amber-100 text-amber-900 font-extrabold text-xs sm:text-sm border border-amber-300 min-h-[44px] cursor-pointer"
+                    aria-label={isHindi ? 'दवाइयों का पूरा शेड्यूल देखें' : 'View full medicine schedule'}
+                    className="px-3 py-2.5 rounded-xl bg-white hover:bg-amber-100 text-amber-900 font-extrabold text-xs sm:text-sm border border-amber-300 min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-amber-400"
                     title={isHindi ? 'दवाइयों की सूची देखें' : 'View full medicine list'}
                   >
                     <span>{isHindi ? 'दवा देखें' : 'View Med'}</span>
@@ -188,7 +191,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                 <button
                   type="button"
                   onClick={onOpenMedicineTracker}
-                  className="w-full py-2 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 text-center"
+                  className="w-full py-2.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 text-center min-h-[44px] flex items-center justify-center"
                 >
                   {isHindi ? 'दवाइयों का शेड्यूल देखें →' : 'View Schedule →'}
                 </button>
@@ -245,6 +248,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                   <button
                     type="button"
                     onClick={onOpenAppointments}
+                    aria-label={isHindi ? `${upcomingAppointment.doctorOrService} अपॉइंटमेंट का विवरण देखें` : `View details for appointment with ${upcomingAppointment.doctorOrService}`}
                     className="flex-1 px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all min-h-[44px] focus-visible:ring-4 focus-visible:ring-sky-400 cursor-pointer"
                   >
                     <span>{isHindi ? 'विवरण देखें' : 'View Details'}</span>
@@ -255,6 +259,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => onSetAppointmentReminder(upcomingAppointment)}
+                      aria-label={isHindi ? `${upcomingAppointment.doctorOrService} अपॉइंटमेंट का रिमाइंडर सेट करें` : `Set reminder for appointment with ${upcomingAppointment.doctorOrService}`}
                       className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-sky-50 text-sky-900 font-extrabold text-xs sm:text-sm border border-sky-300 flex items-center gap-1 transition-all min-h-[44px] focus-visible:ring-4 focus-visible:ring-sky-400 cursor-pointer"
                     >
                       <BellRing className="w-3.5 h-3.5 text-sky-700" />
@@ -266,7 +271,7 @@ export const TodayHelpDashboard: React.FC<TodayHelpDashboardProps> = ({
                 <button
                   type="button"
                   onClick={onOpenAppointments}
-                  className="w-full py-2 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 text-center"
+                  className="w-full py-2.5 px-3 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 text-center min-h-[44px] flex items-center justify-center"
                 >
                   {isHindi ? '+ नई Appointment जोड़ें' : '+ Add Appointment'}
                 </button>

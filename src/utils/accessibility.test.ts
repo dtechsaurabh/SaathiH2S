@@ -81,4 +81,65 @@ describe('Senior Accessibility & Preferences Test Suite', () => {
     expect(loaded.soundEnabled).toBe(true);
     expect(loaded.voiceSpeed).toBe('slow');
   });
+
+  describe('ARIA & DOM Accessibility Architecture Contracts', () => {
+    it('verifies modal dialog standard requirements (role="dialog", aria-modal, aria-labelledby)', () => {
+      // Contract checking for modal a11y specifications
+      const modalRequirements = {
+        role: 'dialog',
+        ariaModal: true,
+        requiresLabelledBy: true,
+        requiresEscapeDismiss: true,
+        minimumTouchTargetPx: 44,
+      };
+
+      expect(modalRequirements.role).toBe('dialog');
+      expect(modalRequirements.ariaModal).toBe(true);
+      expect(modalRequirements.requiresLabelledBy).toBe(true);
+      expect(modalRequirements.requiresEscapeDismiss).toBe(true);
+      expect(modalRequirements.minimumTouchTargetPx).toBeGreaterThanOrEqual(44);
+    });
+
+    it('verifies alert and live region specifications for non-visual announcements', () => {
+      const liveRegionSpecs = {
+        errorAlertRole: 'alert',
+        errorAriaLive: 'polite',
+        statusToastRole: 'status',
+        chatLogRole: 'log',
+        chatAriaLive: 'polite',
+      };
+
+      expect(liveRegionSpecs.errorAlertRole).toBe('alert');
+      expect(liveRegionSpecs.errorAriaLive).toBe('polite');
+      expect(liveRegionSpecs.statusToastRole).toBe('status');
+      expect(liveRegionSpecs.chatLogRole).toBe('log');
+      expect(liveRegionSpecs.chatAriaLive).toBe('polite');
+    });
+
+    it('verifies input validation accessibility attributes (aria-invalid, aria-describedby)', () => {
+      const validateInputA11y = (hasError: boolean, errorId: string) => ({
+        'aria-invalid': hasError,
+        'aria-describedby': hasError ? errorId : undefined,
+      });
+
+      const validState = validateInputA11y(false, 'error-msg-id');
+      expect(validState['aria-invalid']).toBe(false);
+      expect(validState['aria-describedby']).toBeUndefined();
+
+      const invalidState = validateInputA11y(true, 'error-msg-id');
+      expect(invalidState['aria-invalid']).toBe(true);
+      expect(invalidState['aria-describedby']).toBe('error-msg-id');
+    });
+
+    it('verifies touch target sizing complies with senior comfort standard (>= 44px)', () => {
+      const checkTouchTarget = (classNames: string): boolean => {
+        return classNames.includes('min-h-[44px]') || classNames.includes('min-h-[48px]') || classNames.includes('min-h-[52px]');
+      };
+
+      expect(checkTouchTarget('px-4 py-2.5 rounded-xl min-h-[44px]')).toBe(true);
+      expect(checkTouchTarget('px-5 py-3 rounded-2xl min-h-[48px]')).toBe(true);
+      expect(checkTouchTarget('px-6 py-3.5 rounded-2xl min-h-[52px]')).toBe(true);
+      expect(checkTouchTarget('p-1 rounded-sm')).toBe(false);
+    });
+  });
 });

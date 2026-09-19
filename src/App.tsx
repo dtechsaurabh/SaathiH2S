@@ -418,6 +418,22 @@ export default function App() {
     }
   };
 
+  // Keyboard accessibility: Close any open modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsVoiceModalOpen(false);
+        setIsAccessibilityOpen(false);
+        setIsScamCheckerOpen(false);
+        setIsDocExplainerOpen(false);
+        setIsMedicineTrackerOpen(false);
+        setIsAppointmentOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Font size multiplier class for the root wrapper
   const rootSizeClass =
     settings.fontSize === 'xlarge'
@@ -432,10 +448,18 @@ export default function App() {
     <div
       className={`min-h-screen flex flex-col font-sans transition-colors ${
         settings.highContrast
-          ? 'bg-black text-white selection:bg-amber-400 selection:text-black'
+          ? 'high-contrast bg-black text-white selection:bg-amber-400 selection:text-black'
           : 'bg-[#F8F9FA] text-slate-900 selection:bg-amber-200'
       } ${settings.reduceMotion ? 'motion-reduce' : ''} ${rootSizeClass}`}
     >
+      {/* Skip Navigation Link for Keyboard & Screen Reader Users (WCAG 2.4.1) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2.5 focus:bg-amber-600 focus:text-white focus:rounded-xl focus:font-black focus:shadow-xl focus:outline-hidden focus:ring-4 focus:ring-amber-300"
+      >
+        {isHindi ? 'सीधे मुख्य सामग्री पर जाएँ (Skip to main content)' : 'Skip to main content'}
+      </a>
+
       {/* 1. Header with Font, Voice, Accessibility Dialog & Language controls */}
       <Header
         fontSize={settings.fontSize}
@@ -449,7 +473,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 space-y-4">
+      <main id="main-content" tabIndex={-1} className="flex-1 space-y-4 focus:outline-hidden">
         {/* 2. Homepage Hero Section with large "Talk to Saathi" primary button */}
         <HeroSection
           language={settings.language}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Pill,
@@ -48,6 +48,17 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
   const [frequency, setFrequency] = useState('रोज़ाना नाश्ते के बाद (Daily after breakfast)');
   const [instructions, setInstructions] = useState('गुनगुने पानी के साथ लें (Take with water)');
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
   const isHindi = language === 'hi';
@@ -186,8 +197,8 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            aria-label={isHindi ? 'बंद करें' : 'Close'}
-            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-amber-400"
+            aria-label={isHindi ? 'दवाई ट्रैकर बंद करें' : 'Close medicine tracker'}
+            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-amber-400 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6" />
           </button>
@@ -207,8 +218,9 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
           <button
             type="button"
             onClick={onResetDemo}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 min-h-[44px]"
             title={isHindi ? 'डेमो दवाइयां वापस लाएं' : 'Reset sample pills'}
+            aria-label={isHindi ? 'डेमो दवाइयां रीसेट करें' : 'Reset demo medicine schedule'}
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{isHindi ? 'डेमो रीसेट' : 'Reset Demo'}</span>
@@ -227,7 +239,12 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
             </h3>
 
             {formError && (
-              <div className="p-2.5 rounded-xl bg-rose-100 text-rose-900 font-bold text-xs">
+              <div
+                id="med-form-error"
+                role="alert"
+                aria-live="polite"
+                className="p-2.5 rounded-xl bg-rose-100 text-rose-900 font-bold text-xs"
+              >
                 {formError}
               </div>
             )}
@@ -241,7 +258,12 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
                   id="med-name-input"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  aria-invalid={Boolean(formError)}
+                  aria-describedby={formError ? 'med-form-error' : undefined}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (formError) setFormError(null);
+                  }}
                   placeholder={isHindi ? 'उदा: Amlodipine 5mg' : 'E.g., Blood Pressure Medicine'}
                   className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-amber-600 min-h-[44px]"
                 />
@@ -395,7 +417,8 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleMarkTaken(med.id)}
-                              className={`px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 transition-all min-h-[44px] cursor-pointer ${
+                              aria-label={isHindi ? `${med.name} दवाई ली गई चिह्नित करें` : `Mark ${med.name} as taken`}
+                              className={`px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 transition-all min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-emerald-400 ${
                                 isTaken
                                   ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                                   : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
@@ -408,7 +431,8 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleMarkSkipped(med.id)}
-                              className={`px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm border transition-all min-h-[44px] cursor-pointer ${
+                              aria-label={isHindi ? `${med.name} दवाई छोड़ें चिह्नित करें` : `Mark ${med.name} as skipped`}
+                              className={`px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm border transition-all min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-slate-400 ${
                                 isSkipped
                                   ? 'bg-slate-200 text-slate-700 border-slate-300'
                                   : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'

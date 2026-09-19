@@ -156,6 +156,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Simple Language Switcher */}
           <div
+            role="group"
+            aria-label={isHindi ? 'भाषा चुनें' : 'Select language'}
             className={`flex p-0.5 sm:p-1 rounded-xl border min-h-[44px] items-center ${
               highContrast ? 'bg-slate-900 border-white' : 'bg-slate-100 border-slate-200'
             }`}
@@ -165,7 +167,8 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => setLanguage('hi')}
               aria-pressed={language === 'hi'}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all ${
+              aria-label="हिन्दी (Hindi)"
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all min-h-[36px] ${
                 language === 'hi'
                   ? 'bg-amber-600 text-white shadow-2xs'
                   : highContrast
@@ -180,7 +183,8 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => setLanguage('en')}
               aria-pressed={language === 'en'}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all ${
+              aria-label="English"
+              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all min-h-[36px] ${
                 language === 'en'
                   ? 'bg-amber-600 text-white shadow-2xs'
                   : highContrast

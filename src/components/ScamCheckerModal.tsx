@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   ShieldAlert,
@@ -59,6 +59,17 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScamAnalysisResult | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
   const isHindi = language === 'hi';
@@ -193,8 +204,8 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            aria-label={isHindi ? 'बंद करें' : 'Close'}
-            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-amber-400"
+            aria-label={isHindi ? 'स्कैम चेकर बंद करें' : 'Close scam checker'}
+            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-amber-400 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6" />
           </button>
@@ -202,7 +213,7 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
 
         {/* Subtle Safety Reminder */}
         <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs sm:text-sm font-bold flex items-center gap-2.5">
-          <ShieldAlert className="w-5 h-5 text-amber-700 shrink-0" />
+          <ShieldAlert className="w-5 h-5 text-amber-700 shrink-0" aria-hidden="true" />
           <span>
             {isHindi
               ? '⚠️ OTP, PIN, password या banking credentials यहाँ साझा न करें।'
@@ -221,6 +232,8 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
               rows={4}
               maxLength={5000}
               value={inputText}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'scam-error-alert' : undefined}
               onChange={(e) => {
                 setInputText(e.target.value);
                 if (error) setError(null);
@@ -239,7 +252,8 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
                   setInputText('');
                   setError(null);
                 }}
-                className="absolute top-3 right-3 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 rounded-md font-bold"
+                aria-label={isHindi ? 'संदेश साफ करें' : 'Clear message text'}
+                className="absolute top-3 right-3 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg font-bold min-h-[44px] flex items-center"
               >
                 {isHindi ? 'साफ करें' : 'Clear'}
               </button>
@@ -281,7 +295,7 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => handleSelectPreset(preset.text)}
-                className="p-2.5 rounded-xl border border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/50 text-left transition-all text-xs font-semibold text-slate-800 flex items-center justify-between group"
+                className="p-3 rounded-xl border border-slate-200 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/50 text-left transition-all text-xs font-semibold text-slate-800 flex items-center justify-between group min-h-[44px] cursor-pointer focus-visible:ring-4 focus-visible:ring-amber-400"
               >
                 <span className="line-clamp-1">{isHindi ? preset.titleHi : preset.titleEn}</span>
                 <span className="text-[11px] text-amber-700 font-bold opacity-80 group-hover:opacity-100 shrink-0">
@@ -295,6 +309,7 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
         {/* Error Alert */}
         {error && (
           <div
+            id="scam-error-alert"
             role="alert"
             aria-live="polite"
             className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex items-center justify-between gap-3"
@@ -307,7 +322,7 @@ export const ScamCheckerModal: React.FC<ScamCheckerModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleAnalyze()}
-                className="px-3 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-xs shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-xs shrink-0 min-h-[44px] flex items-center cursor-pointer"
               >
                 {isHindi ? 'दोबारा करें' : 'Retry'}
               </button>
