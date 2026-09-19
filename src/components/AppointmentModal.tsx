@@ -1,0 +1,623 @@
+import React, { useState } from 'react';
+import {
+  X,
+  Calendar,
+  Clock,
+  MapPin,
+  Stethoscope,
+  Plus,
+  Sparkles,
+  CheckCircle2,
+  HelpCircle,
+  RotateCcw,
+  RefreshCw,
+  Edit2,
+  Trash2,
+  BellRing,
+  AlertTriangle,
+  ArrowRight,
+  FileText,
+} from 'lucide-react';
+import { AppointmentItem, Language, AppointmentPrepResult, ReminderItem } from '../types';
+import { speakText } from '../utils/speech';
+import { aiService } from '../services/aiService';
+
+interface AppointmentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  language: Language;
+  soundEnabled: boolean;
+  appointments: AppointmentItem[];
+  onUpdateAppointments: (appointments: AppointmentItem[]) => void;
+  onResetDemo: () => void;
+  onSetReminder?: (reminder: ReminderItem) => void;
+}
+
+export const AppointmentModal: React.FC<AppointmentModalProps> = ({
+  isOpen,
+  onClose,
+  language,
+  soundEnabled,
+  appointments,
+  onUpdateAppointments,
+  onResetDemo,
+  onSetReminder,
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingAppId, setEditingAppId] = useState<string | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [prepLoading, setPrepLoading] = useState(false);
+  const [prepResult, setPrepResult] = useState<AppointmentPrepResult | null>(null);
+  const [prepError, setPrepError] = useState<string | null>(null);
+  const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
+  const [deleteConfirmAppId, setDeleteConfirmAppId] = useState<string | null>(null);
+
+  // Form fields
+  const [doctorName, setDoctorName] = useState('');
+  const [specialty, setSpecialty] = useState('General Physician');
+  const [date, setDate] = useState('कल (Tomorrow)');
+  const [time, setTime] = useState('11:00 AM');
+  const [location, setLocation] = useState('नजदीकी अस्पताल / डिस्पेंसरी');
+  const [notes, setNotes] = useState('नियमित जांच व ब्लड प्रेशर चेक');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+  const isHindi = language === 'hi';
+
+  const resetForm = () => {
+    setDoctorName('');
+    setSpecialty('General Physician');
+    setDate('कल (Tomorrow)');
+    setTime('11:00 AM');
+    setLocation('नजदीकी अस्पताल / डिस्पेंसरी');
+    setNotes('नियमित जांच व ब्लड प्रेशर चेक');
+    setFormError(null);
+    setEditingAppId(null);
+    setShowAddForm(false);
+  };
+
+  const handleStartEdit = (app: AppointmentItem) => {
+    setEditingAppId(app.id);
+    setDoctorName(app.doctorOrService);
+    setSpecialty(app.specialty);
+    setDate(app.date);
+    setTime(app.time);
+    setLocation(app.location);
+    setNotes(app.notes || '');
+    setShowAddForm(true);
+    setDeleteConfirmAppId(null);
+  };
+
+  const handleConfirmDelete = (id: string) => {
+    const app = appointments.find((a) => a.id === id);
+    const updated = appointments.filter((a) => a.id !== id);
+    onUpdateAppointments(updated);
+    setDeleteConfirmAppId(null);
+    if (selectedAppId === id) {
+      setSelectedAppId(null);
+      setPrepResult(null);
+    }
+    const msg = isHindi
+      ? `${app ? app.doctorOrService : 'Appointment'} हटा दी गई है।`
+      : 'Appointment removed.';
+    setNotificationMsg(msg);
+    setTimeout(() => setNotificationMsg(null), 3000);
+  };
+
+  const handleSetReminder = (app: AppointmentItem) => {
+    const newReminder: ReminderItem = {
+      id: `rem-app-${Date.now()}`,
+      title: `Doctor: ${app.doctorOrService}`,
+      titleHi: `डॉक्टर परामर्श: ${app.doctorOrService}`,
+      time: app.time,
+      timeLabel: `${app.date}, ${app.time}`,
+      timeLabelHi: `${app.date}, ${app.time}`,
+      category: 'doctor',
+      completed: false,
+      status: 'pending',
+      notes: `${app.specialty} - ${app.location}`,
+      notesHi: `${app.specialty} - ${app.location}`,
+      important: true,
+      isDemo: false,
+    };
+
+    if (onSetReminder) {
+      onSetReminder(newReminder);
+    }
+
+    const msg = isHindi
+      ? `✅ ${app.doctorOrService} के लिए Reminder सेट कर दिया गया है!`
+      : `✅ Reminder set for ${app.doctorOrService}!`;
+    setNotificationMsg(msg);
+    setTimeout(() => setNotificationMsg(null), 4000);
+
+    if (soundEnabled) {
+      speakText(msg, language);
+    }
+  };
+
+  const handlePrepareAppointment = async (app: AppointmentItem) => {
+    if (selectedAppId === app.id) {
+      // Toggle close
+      setSelectedAppId(null);
+      setPrepResult(null);
+      return;
+    }
+
+    setSelectedAppId(app.id);
+    setPrepLoading(true);
+    setPrepError(null);
+    setPrepResult(null);
+
+    try {
+      const data = await aiService.prepareAppointment(
+        app.doctorOrService,
+        {
+          date: app.date,
+          time: app.time,
+          notes: `${app.specialty} ${app.notes || ''}`,
+        },
+        language
+      );
+      setPrepResult(data);
+
+      if (soundEnabled) {
+        const speechMsg = isHindi
+          ? `डॉक्टर से मिलने की तैयारी सूची तैयार है। पिछली रिपोर्ट्स साथ रखें।`
+          : `Visit preparation checklist ready. Remember to carry past prescriptions.`;
+        speakText(speechMsg, language);
+      }
+    } catch (err) {
+      console.error('Appointment prep error:', err);
+      setPrepError(
+        isHindi
+          ? 'तैयारी सूची बनाने में तकनीकी कठिनाई आई। कृपया पुनः प्रयास करें।'
+          : 'Unable to prepare checklist right now. Please try again.'
+      );
+    } finally {
+      setPrepLoading(false);
+    }
+  };
+
+  const handleSubmitForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!doctorName.trim()) {
+      setFormError(isHindi ? 'कृपया डॉक्टर का नाम लिखें' : 'Please enter doctor or clinic name');
+      return;
+    }
+
+    if (editingAppId) {
+      const updated = appointments.map((a) => {
+        if (a.id === editingAppId) {
+          return {
+            ...a,
+            doctorOrService: doctorName.trim(),
+            specialty: specialty.trim() || 'General Physician',
+            date: date.trim() || 'Upcoming',
+            time: time.trim() || '10:00 AM',
+            location: location.trim() || 'Clinic OPD',
+            notes: notes.trim(),
+          };
+        }
+        return a;
+      });
+      onUpdateAppointments(updated);
+      const msg = isHindi ? 'अपॉइंटमेंट अपडेट कर दी गई है।' : 'Appointment updated.';
+      setNotificationMsg(msg);
+      setTimeout(() => setNotificationMsg(null), 3000);
+      if (soundEnabled) speakText(msg, language);
+    } else {
+      const newApp: AppointmentItem = {
+        id: `app-${Date.now()}`,
+        doctorOrService: doctorName.trim(),
+        specialty: specialty.trim() || 'General Physician',
+        date: date.trim() || 'कल',
+        time: time.trim() || '11:00 AM',
+        location: location.trim() || 'Clinic OPD',
+        notes: notes.trim(),
+        status: 'upcoming',
+        isDemo: false,
+      };
+
+      onUpdateAppointments([...appointments, newApp]);
+      const msg = isHindi
+        ? `${newApp.doctorOrService} के लिए अपॉइंटमेंट जोड़ दी गई है।`
+        : `Appointment with ${newApp.doctorOrService} added.`;
+      setNotificationMsg(msg);
+      setTimeout(() => setNotificationMsg(null), 3000);
+      if (soundEnabled) speakText(msg, language);
+    }
+
+    resetForm();
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="appointment-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
+    >
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 border-2 border-slate-300 shadow-xl space-y-5 my-6 max-h-[92vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-sky-100 border border-sky-300 flex items-center justify-center text-2xl shrink-0">
+              🩺
+            </div>
+            <div>
+              <h2 id="appointment-title" className="text-xl sm:text-2xl font-black text-slate-900">
+                {isHindi ? '🩺 मेरी Appointments' : '🩺 My Appointments'}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-semibold mt-0.5">
+                {isHindi
+                  ? 'डॉक्टर से मुलाकात, तारीख, समय व तैयारी'
+                  : 'Doctor visits, schedule, and preparation checklist'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label={isHindi ? 'बंद करें' : 'Close'}
+            className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors focus-visible:ring-4 focus-visible:ring-sky-400"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Notification message toast */}
+        {notificationMsg && (
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs sm:text-sm font-bold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{notificationMsg}</span>
+          </div>
+        )}
+
+        {/* Primary Action Button: + नई Appointment */}
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setShowAddForm(!showAddForm);
+            }}
+            className="px-5 py-3 rounded-2xl bg-sky-700 hover:bg-sky-800 text-white font-black text-sm sm:text-base flex items-center gap-2 shadow-xs transition-all focus-visible:ring-4 focus-visible:ring-sky-400 min-h-[48px] cursor-pointer"
+          >
+            <Plus className="w-5 h-5" />
+            <span>{isHindi ? '+ नई Appointment' : '+ Add Appointment'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onResetDemo}
+            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5"
+            title={isHindi ? 'डेमो अपॉइंटमेंट वापस लाएं' : 'Reset sample visits'}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>{isHindi ? 'डेमो रीसेट' : 'Reset Demo'}</span>
+          </button>
+        </div>
+
+        {/* Add / Edit Form */}
+        {showAddForm && (
+          <form
+            onSubmit={handleSubmitForm}
+            className="p-5 rounded-2xl bg-slate-50 border-2 border-sky-300 space-y-3.5 text-slate-900"
+          >
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Stethoscope className="w-5 h-5 text-sky-700" />
+              <span>
+                {editingAppId
+                  ? isHindi ? 'अपॉइंटमेंट संपादित करें' : 'Edit Appointment'
+                  : isHindi ? 'नई अपॉइंटमेंट जोड़ें' : 'Add New Appointment'}
+              </span>
+            </h3>
+
+            {formError && (
+              <div className="p-2.5 rounded-xl bg-rose-100 text-rose-900 font-bold text-xs">
+                {formError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  {isHindi ? 'डॉक्टर या अस्पताल का नाम*' : 'Doctor / Hospital Name*'}
+                </label>
+                <input
+                  type="text"
+                  value={doctorName}
+                  onChange={(e) => setDoctorName(e.target.value)}
+                  placeholder={isHindi ? 'उदा: Dr. Sharma' : 'E.g., Dr. Sharma'}
+                  className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-sky-600 min-h-[44px]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  {isHindi ? 'विशेषज्ञता (Specialty)' : 'Specialty'}
+                </label>
+                <input
+                  type="text"
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  placeholder={isHindi ? 'उदा: हृदय रोग विशेषज्ञ (Cardiologist)' : 'E.g., Cardiologist'}
+                  className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-sky-600 min-h-[44px]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  {isHindi ? 'तारीख (Date)' : 'Date'}
+                </label>
+                <input
+                  type="text"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  placeholder={isHindi ? 'उदा: कल सुबह, 24 Oct' : 'E.g., Tomorrow, 24 Oct'}
+                  className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-sky-600 min-h-[44px]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  {isHindi ? 'समय (Time)' : 'Time'}
+                </label>
+                <input
+                  type="text"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  placeholder="11:30 AM"
+                  className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-sky-600 min-h-[44px]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                {isHindi ? 'स्थान / अस्पताल का पता' : 'Location'}
+              </label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder={isHindi ? 'उदा: मैक्स हॉस्पिटल OPD, कमरा 12' : 'E.g., City Clinic, Room 12'}
+                className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-sky-600 min-h-[44px]"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                {isHindi ? 'नोट्स (समस्या या कारण)' : 'Notes'}
+              </label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={isHindi ? 'उदा: बीपी चेक और पुरानी रिपोर्ट दिखाना' : 'E.g., Routine BP check'}
+                className="w-full p-3 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-900 focus:border-sky-600 min-h-[44px]"
+              />
+            </div>
+
+            <div className="pt-2 flex items-center gap-2">
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-black text-sm min-h-[44px]"
+              >
+                {editingAppId
+                  ? isHindi ? 'अपडेट सहेजें' : 'Save Changes'
+                  : isHindi ? 'अपॉइंटमेंट सहेजें' : 'Save Appointment'}
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm min-h-[44px]"
+              >
+                {isHindi ? 'रद्द करें' : 'Cancel'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Friendly Empty State */}
+        {appointments.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
+            <p className="text-base sm:text-lg font-bold text-slate-700">
+              {isHindi
+                ? 'अभी कोई upcoming appointment नहीं है।'
+                : 'No upcoming appointments scheduled.'}
+            </p>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto">
+              {isHindi
+                ? 'जब भी डॉक्टर के पास जाना हो, यहाँ तारीख और समय सुरक्षित कर सकते हैं।'
+                : 'Whenever you plan a doctor visit, you can add it here with reminders.'}
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="px-6 py-3 rounded-2xl bg-sky-700 hover:bg-sky-800 text-white font-black text-sm inline-flex items-center gap-2 shadow-xs min-h-[44px]"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{isHindi ? '+ Appointment जोड़ें' : '+ Add Appointment'}</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Clean Appointment Timeline */
+          <div className="space-y-4">
+            {appointments.map((app) => {
+              const isSelected = selectedAppId === app.id;
+              const isDeleting = deleteConfirmAppId === app.id;
+
+              return (
+                <div
+                  key={app.id}
+                  className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border-2 border-slate-200 hover:border-sky-300 transition-all space-y-3"
+                >
+                  {/* Doctor & Date Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-xs font-black uppercase text-sky-800 tracking-wider">
+                        🩺 {app.specialty}
+                      </span>
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
+                        {app.doctorOrService}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 self-start sm:self-center">
+                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-100 text-sky-900 border border-sky-300">
+                        📅 {app.date} • ⏰ {app.time}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Notes & Location */}
+                  <div className="text-xs sm:text-sm text-slate-700 space-y-1">
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
+                      <span>{app.location}</span>
+                    </p>
+                    {app.notes && (
+                      <p className="flex items-center gap-1.5 font-medium text-slate-600">
+                        <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span>{app.notes}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Inline Delete Confirmation Dialog (Safe in Iframes!) */}
+                  {isDeleting && (
+                    <div className="p-3.5 rounded-xl bg-rose-50 border-2 border-rose-300 space-y-2">
+                      <p className="text-xs sm:text-sm font-bold text-rose-950">
+                        {isHindi
+                          ? `क्या आप सचमुच ${app.doctorOrService} की अपॉइंटमेंट हटाना चाहते हैं?`
+                          : `Are you sure you want to delete this appointment with ${app.doctorOrService}?`}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmDelete(app.id)}
+                          className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-black text-xs min-h-[36px]"
+                        >
+                          {isHindi ? 'हाँ, हटाएँ' : 'Yes, Delete'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmAppId(null)}
+                          className="px-3.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-bold text-xs min-h-[36px]"
+                        >
+                          {isHindi ? 'रद्द करें' : 'Cancel'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions: विवरण, Reminder, Edit, Delete */}
+                  {!isDeleting && (
+                    <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* 1. विवरण (Details / AI Prep) */}
+                        <button
+                          type="button"
+                          onClick={() => handlePrepareAppointment(app)}
+                          className="px-3.5 py-2 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs min-h-[40px] cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>{isSelected ? (isHindi ? 'विवरण बंद करें' : 'Hide Details') : (isHindi ? 'विवरण' : 'Details')}</span>
+                        </button>
+
+                        {/* 2. Reminder */}
+                        <button
+                          type="button"
+                          onClick={() => handleSetReminder(app)}
+                          className="px-3 py-2 rounded-xl bg-white hover:bg-sky-50 text-sky-900 border border-sky-300 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[40px] cursor-pointer"
+                        >
+                          <BellRing className="w-3.5 h-3.5 text-sky-700" />
+                          <span>{isHindi ? 'Reminder' : 'Reminder'}</span>
+                        </button>
+
+                        {/* 3. Edit */}
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(app)}
+                          className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[40px] cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>{isHindi ? 'Edit' : 'Edit'}</span>
+                        </button>
+                      </div>
+
+                      {/* 4. Delete (Visually separated with confirmation) */}
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmAppId(app.id)}
+                        className="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-rose-200 font-bold text-xs sm:text-sm flex items-center gap-1 min-h-[40px] cursor-pointer ml-auto"
+                        title={isHindi ? 'हटाएँ' : 'Delete'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{isHindi ? 'Delete' : 'Delete'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Expanded AI Preparation Checklist */}
+                  {isSelected && (
+                    <div className="mt-3 p-4 rounded-xl bg-white border-2 border-sky-200 space-y-3">
+                      {prepLoading && (
+                        <div className="flex items-center gap-2 text-sky-900 font-bold text-xs sm:text-sm py-2">
+                          <RefreshCw className="w-4 h-4 animate-spin text-sky-600" />
+                          <span>{isHindi ? 'डॉक्टर से मुलाकात की तैयारी सूची बनाई जा रही है...' : 'Preparing visit checklist...'}</span>
+                        </div>
+                      )}
+
+                      {prepError && (
+                        <div className="p-2.5 rounded-lg bg-amber-50 text-amber-900 text-xs font-bold">
+                          {prepError}
+                        </div>
+                      )}
+
+                      {prepResult && (
+                        <div className="space-y-3">
+                          <div className="p-3 rounded-lg bg-sky-50 border border-sky-200">
+                            <span className="text-xs font-black uppercase text-sky-900 block mb-1">
+                              📋 {isHindi ? 'साथ ले जाने वाले जरूरी कागज़ात व तैयारी:' : 'Items to carry & Preparation:'}
+                            </span>
+                            <ul className="space-y-1">
+                              {prepResult.checklist.map((it: string, idx: number) => (
+                                <li key={idx} className="text-xs sm:text-sm font-semibold text-slate-800 flex items-start gap-2">
+                                  <span className="text-sky-600 font-bold">✓</span>
+                                  <span>{it}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                            <span className="text-xs font-black uppercase text-amber-950 block mb-1">
+                              ❓ {isHindi ? 'डॉक्टर से पूछने योग्य जरूरी सवाल:' : 'Questions to ask:'}
+                            </span>
+                            <ul className="space-y-1">
+                              {prepResult.questionsToAsk.map((q: string, idx: number) => (
+                                <li key={idx} className="text-xs sm:text-sm font-semibold text-slate-800 flex items-start gap-2">
+                                  <span className="text-amber-600 font-bold">•</span>
+                                  <span>{q}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,10 @@
+{
+  "name": "Saathi – AI Companion for Seniors",
+  "description": "A GenAI-powered digital companion designed specifically for senior citizens, making everyday technology simple, safe, accessible and easy to understand.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
