@@ -102,13 +102,22 @@ const MEDICINES_KEY = 'saathi_medicines_v2';
 const APPOINTMENTS_KEY = 'saathi_appointments_v2';
 const REMINDERS_KEY = 'saathi_reminders_v2';
 
-// Safe localStorage helpers
+// In-memory write cache to prevent redundant localStorage stringifications and I/O writes
+let lastSavedSettings = '';
+let lastSavedMedicines = '';
+let lastSavedAppointments = '';
+let lastSavedReminders = '';
+
+// Safe localStorage helpers with corruption protection
 export function loadSeniorSettings(): SeniorSettings {
   try {
     const saved = localStorage.getItem(SETTINGS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return { ...DEFAULT_SETTINGS, ...parsed };
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        lastSavedSettings = saved;
+        return { ...DEFAULT_SETTINGS, ...parsed };
+      }
     }
   } catch (e) {
     console.warn('Could not load settings from storage:', e);
@@ -118,7 +127,10 @@ export function loadSeniorSettings(): SeniorSettings {
 
 export function saveSeniorSettings(settings: SeniorSettings): void {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    const str = JSON.stringify(settings);
+    if (str === lastSavedSettings) return; // Skip redundant I/O write
+    localStorage.setItem(SETTINGS_KEY, str);
+    lastSavedSettings = str;
   } catch (e) {
     console.warn('Could not save settings to storage:', e);
   }
@@ -128,7 +140,11 @@ export function loadMedicines(): MedicineItem[] {
   try {
     const saved = localStorage.getItem(MEDICINES_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        lastSavedMedicines = saved;
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn('Could not load medicines:', e);
@@ -138,7 +154,10 @@ export function loadMedicines(): MedicineItem[] {
 
 export function saveMedicines(medicines: MedicineItem[]): void {
   try {
-    localStorage.setItem(MEDICINES_KEY, JSON.stringify(medicines));
+    const str = JSON.stringify(medicines);
+    if (str === lastSavedMedicines) return; // Skip redundant I/O write
+    localStorage.setItem(MEDICINES_KEY, str);
+    lastSavedMedicines = str;
   } catch (e) {
     console.warn('Could not save medicines:', e);
   }
@@ -148,7 +167,11 @@ export function loadAppointments(): AppointmentItem[] {
   try {
     const saved = localStorage.getItem(APPOINTMENTS_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        lastSavedAppointments = saved;
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn('Could not load appointments:', e);
@@ -158,7 +181,10 @@ export function loadAppointments(): AppointmentItem[] {
 
 export function saveAppointments(appointments: AppointmentItem[]): void {
   try {
-    localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(appointments));
+    const str = JSON.stringify(appointments);
+    if (str === lastSavedAppointments) return; // Skip redundant I/O write
+    localStorage.setItem(APPOINTMENTS_KEY, str);
+    lastSavedAppointments = str;
   } catch (e) {
     console.warn('Could not save appointments:', e);
   }
@@ -168,7 +194,11 @@ export function loadReminders(): ReminderItem[] {
   try {
     const saved = localStorage.getItem(REMINDERS_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        lastSavedReminders = saved;
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn('Could not load reminders:', e);
@@ -178,7 +208,10 @@ export function loadReminders(): ReminderItem[] {
 
 export function saveReminders(reminders: ReminderItem[]): void {
   try {
-    localStorage.setItem(REMINDERS_KEY, JSON.stringify(reminders));
+    const str = JSON.stringify(reminders);
+    if (str === lastSavedReminders) return; // Skip redundant I/O write
+    localStorage.setItem(REMINDERS_KEY, str);
+    lastSavedReminders = str;
   } catch (e) {
     console.warn('Could not save reminders:', e);
   }
@@ -189,6 +222,9 @@ export function resetDemoData(): void {
     localStorage.removeItem(MEDICINES_KEY);
     localStorage.removeItem(APPOINTMENTS_KEY);
     localStorage.removeItem(REMINDERS_KEY);
+    lastSavedMedicines = '';
+    lastSavedAppointments = '';
+    lastSavedReminders = '';
   } catch (e) {
     console.warn('Could not reset demo data:', e);
   }

@@ -4,9 +4,16 @@
  */
 
 let currentUtterance: SpeechSynthesisUtterance | null = null;
+let lastSpokenText = '';
+let lastSpokenTimestamp = 0;
 
 export function stopSpeaking(): void {
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (currentUtterance) {
+      // Detach listeners before cancelling to prevent spurious callbacks or state corruption
+      currentUtterance.onend = null;
+      currentUtterance.onerror = null;
+    }
     window.speechSynthesis.cancel();
     currentUtterance = null;
   }
@@ -22,6 +29,14 @@ export function speakText(
     console.warn('Speech synthesis not supported on this device');
     return false;
   }
+
+  // Throttle duplicate rapid clicks (within 300ms) with identical text
+  const now = Date.now();
+  if (text === lastSpokenText && now - lastSpokenTimestamp < 300 && isSpeaking()) {
+    return true;
+  }
+  lastSpokenText = text;
+  lastSpokenTimestamp = now;
 
   try {
     stopSpeaking();

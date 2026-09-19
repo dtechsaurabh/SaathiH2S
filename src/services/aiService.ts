@@ -53,12 +53,14 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = D
 }
 
 /**
- * Execute request with 1 automatic retry on transient network errors and deduplication
+ * Execute request with 1 automatic retry on transient network errors and deduplication.
+ * Returns a cloned response so concurrent in-flight callers can each safely consume the body stream.
  */
 async function fetchWithRetry(url: string, options: RequestInit, retries = 1): Promise<Response> {
   const cacheKey = `${url}:${options.method || 'GET'}:${options.body ? String(options.body) : ''}`;
   if (inFlightRequests.has(cacheKey)) {
-    return inFlightRequests.get(cacheKey)!;
+    const existing = await inFlightRequests.get(cacheKey)!;
+    return typeof existing.clone === 'function' ? existing.clone() : existing;
   }
 
   const execPromise = (async () => {
@@ -76,7 +78,8 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 1): P
   })();
 
   inFlightRequests.set(cacheKey, execPromise);
-  return execPromise;
+  const response = await execPromise;
+  return typeof response.clone === 'function' ? response.clone() : response;
 }
 
 /**
@@ -91,7 +94,7 @@ export function resolveLocalDirectAnswer(
   const text = (message || '').trim().toLowerCase();
   const isHi = language === 'hi';
 
-  // 1. Medicine schedule queries: "मेरी दवा कब है?", "दवा कब लेनी है", "when is my medicine", "next medicine"
+  // 1. Medicine schedule queries: "मेरी दवा कब है?", "दवा कब लेनी है", "when is my medicine", "next medicine", "show my medicine reminders"
   const isMedicineScheduleQuery =
     text.includes('दवा कब') ||
     text.includes('दवाई कब') ||
@@ -101,26 +104,50 @@ export function resolveLocalDirectAnswer(
     text.includes('next medicine') ||
     text.includes('medicine time') ||
     text.includes('दवा का समय') ||
-    text.includes('मेरी दवा दिखाओ') ||
-    text.includes('meri dawa');
+    text.includes('मेरी दवा') ||
+    text.includes('meri dawa') ||
+    text.includes('show my medicine') ||
+    text.includes('medicine reminder');
 
-  if (isMedicineScheduleQuery && context?.medicines && context.medicines.length > 0) {
-    const pendingMed = context.medicines.find((m: any) => m.status === 'pending') || context.medicines[0];
-    if (pendingMed) {
+  if (isMedicineScheduleQuery) {
+    if (context?.medicines && context.medicines.length > 0) {
+      const pendingMed = context.medicines.find((m: any) => m.status === 'pending') || context.medicines[0];
+      if (pendingMed) {
+        return {
+          reply: isHi
+            ? `आज आपकी अगली दवा ${pendingMed.name} ${pendingMed.time} पर है (${pendingMed.instructionsHi || pendingMed.instructions || pendingMed.dosage})।`
+            : `Your next scheduled medicine today is ${pendingMed.name} at ${pendingMed.time} (${pendingMed.instructions || pendingMed.dosage}).`,
+          steps: isHi
+            ? [
+                'समय पर गुनगुने पानी के साथ लें।',
+                'दवा लेने के बाद साथी में "ले ली" पर टैप करें।',
+                'दवाओं की पूरी सूची देखने के लिए नीचे दिए गए बटन पर टैप करें।',
+              ]
+            : [
+                'Take at the scheduled time with water.',
+                'Tap "Taken" in Saathi once completed.',
+                'Tap the button below to view your full medicine schedule.',
+              ],
+          suggestedAction: 'open_medicine',
+          source: 'local-companion',
+        };
+      }
+    } else if (context?.medicines && context.medicines.length === 0) {
+      // Local answer when medicines list is empty, avoiding unnecessary Gemini API call
       return {
         reply: isHi
-          ? `आज आपकी अगली दवा ${pendingMed.name} ${pendingMed.time} पर है (${pendingMed.instructionsHi || pendingMed.instructions || pendingMed.dosage})।`
-          : `Your next scheduled medicine today is ${pendingMed.name} at ${pendingMed.time} (${pendingMed.instructions || pendingMed.dosage}).`,
+          ? 'वर्तमान में आपकी कोई दवा शेड्यूल नहीं है। आप नीचे दिए गए बटन पर टैप करके अपनी दवाइयाँ और समय आसानी से जोड़ सकते हैं।'
+          : 'You currently have no medicines scheduled. You can easily add your medicines and reminders by tapping the button below.',
         steps: isHi
           ? [
-              'समय पर गुनगुने पानी के साथ लें।',
-              'दवा लेने के बाद साथी में "ले ली" पर टैप करें।',
-              'दवाओं की पूरी सूची देखने के लिए नीचे दिए गए बटन पर टैप करें।',
+              'नीचे दिए गए "दवाई समय-सारणी" बटन पर टैप करें।',
+              '"+ नई दवाई जोड़ें" दबाकर दवाई का नाम और समय चुनें।',
+              'साथी आपको रोज़ाना सही समय पर याद दिलाएगा।',
             ]
           : [
-              'Take at the scheduled time with water.',
-              'Tap "Taken" in Saathi once completed.',
-              'Tap the button below to view your full medicine schedule.',
+              'Tap the "Medicine Schedule" button below.',
+              'Click "+ Add Medicine" to set the name and time.',
+              'Saathi will remind you on time every day.',
             ],
         suggestedAction: 'open_medicine',
         source: 'local-companion',
@@ -136,37 +163,61 @@ export function resolveLocalDirectAnswer(
     text.includes('upcoming appointment') ||
     text.includes('appointment kab hai') ||
     text.includes('अपॉइंटमेंट कब है') ||
-    text.includes('doctor kab hai');
+    text.includes('doctor kab hai') ||
+    text.includes('कल का कार्यक्रम');
 
-  if (isTomorrowOrAppointmentQuery && context?.appointments && context.appointments.length > 0) {
-    const nextApp = context.appointments[0];
-    return {
-      reply: isHi
-        ? `आपकी अगली डॉक्टर अपॉइंटमेंट ${nextApp.date} को ${nextApp.time} पर ${nextApp.doctorOrService} (${nextApp.specialty}) के साथ है। स्थान: ${nextApp.location}।`
-        : `Your next doctor appointment is on ${nextApp.date} at ${nextApp.time} with ${nextApp.doctorOrService} (${nextApp.specialty}) at ${nextApp.location}.`,
-      steps: isHi
-        ? [
-            'अपनी पुरानी पर्चियां और सभी टेस्ट रिपोर्ट साथ रखें।',
-            'समय से 15 मिनट पहले पहुँचें।',
-            'डॉक्टर से पूछने वाले सवालों की तैयारी के लिए नीचे दिए गए बटन पर टैप करें।',
-          ]
-        : [
-            'Keep your previous prescription records ready in a folder.',
-            'Arrive 15 minutes before the scheduled time.',
-            'Tap the button below to view doctor visit preparation and questions.',
-          ],
-      suggestedAction: 'open_appointment',
-      source: 'local-companion',
-    };
+  if (isTomorrowOrAppointmentQuery) {
+    if (context?.appointments && context.appointments.length > 0) {
+      const nextApp = context.appointments[0];
+      return {
+        reply: isHi
+          ? `आपकी अगली डॉक्टर अपॉइंटमेंट ${nextApp.date} को ${nextApp.time} पर ${nextApp.doctorOrService} (${nextApp.specialty}) के साथ है। स्थान: ${nextApp.location}।`
+          : `Your next doctor appointment is on ${nextApp.date} at ${nextApp.time} with ${nextApp.doctorOrService} (${nextApp.specialty}) at ${nextApp.location}.`,
+        steps: isHi
+          ? [
+              'अपनी पुरानी पर्चियां और सभी टेस्ट रिपोर्ट साथ रखें।',
+              'समय से 15 मिनट पहले पहुँचें।',
+              'डॉक्टर से पूछने वाले सवालों की तैयारी के लिए नीचे दिए गए बटन पर टैप करें।',
+            ]
+          : [
+              'Keep your previous prescription records ready in a folder.',
+              'Arrive 15 minutes before the scheduled time.',
+              'Tap the button below to view doctor visit preparation and questions.',
+            ],
+        suggestedAction: 'open_appointment',
+        source: 'local-companion',
+      };
+    } else if (context?.appointments && context.appointments.length === 0) {
+      // Local answer when appointments list is empty, avoiding unnecessary Gemini API call
+      return {
+        reply: isHi
+          ? 'कल के लिए आपकी कोई डॉक्टर अपॉइंटमेंट या विशेष कार्य दर्ज नहीं है। आप आराम से अपना दिन बिता सकते हैं।'
+          : 'You have no doctor appointments or special visits scheduled for tomorrow. Have a peaceful, restful day!',
+        steps: isHi
+          ? [
+              'यदि आप डॉक्टर से मिलने का कार्यक्रम बनाना चाहते हैं, तो नीचे दिए गए बटन पर टैप करें।',
+              'साथी आपके लिए डॉक्टर से पूछने वाले सवालों की तैयारी भी कर देगा।',
+            ]
+          : [
+              'If you wish to schedule a doctor visit, tap the button below.',
+              'Saathi will also help you prepare questions and checklists for your doctor visit.',
+            ],
+        suggestedAction: 'open_appointment',
+        source: 'local-companion',
+      };
+    }
   }
 
-  // 3. How to add appointment: "appointment कैसे बनाऊँ?", "how to make appointment", "how to add appointment"
+  // 3. How to add appointment: "appointment कैसे बनाऊँ?", "appointment kaise banaye", "how to make appointment", "how to add appointment"
   const isAddAppointmentQuery =
     text.includes('appointment कैसे') ||
     text.includes('appointment kaise') ||
     text.includes('how to make appointment') ||
     text.includes('how to add appointment') ||
-    text.includes('अपॉइंटमेंट कैसे बनाए');
+    text.includes('how to book appointment') ||
+    text.includes('अपॉइंटमेंट कैसे') ||
+    text.includes('appointment बनानी है') ||
+    text.includes('doctor appointment kaise');
 
   if (isAddAppointmentQuery) {
     return {
@@ -193,11 +244,15 @@ export function resolveLocalDirectAnswer(
   const isQuestionsForDoctorQuery =
     text.includes('डॉक्टर के लिए क्या पूछना') ||
     text.includes('डॉक्टर से क्या पूछें') ||
+    text.includes('डॉक्टर से क्या पूछना') ||
     text.includes('kya poochna chahiye') ||
     text.includes('kya puchna') ||
     text.includes('what should i ask') ||
     text.includes('questions to ask doctor') ||
-    text.includes('doctor se kya pooche');
+    text.includes('questions for doctor') ||
+    text.includes('doctor se kya pooche') ||
+    text.includes('doctor se kya puchhe') ||
+    text.includes('doctor ke liye sawal');
 
   if (isQuestionsForDoctorQuery) {
     return {

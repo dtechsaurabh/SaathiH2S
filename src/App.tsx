@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { TodayHelpDashboard } from './components/TodayHelpDashboard';
@@ -88,6 +88,22 @@ export default function App() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [externalInput, setExternalInput] = useState('');
+  const isSendingRef = useRef(false);
+  const isInitialMountLang = useRef(true);
+
+  // Clean up any speaking speech synthesis when App unmounts
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
+
+  // Stop speech when voice modal opens to avoid feeding audio into microphone
+  useEffect(() => {
+    if (isVoiceModalOpen) {
+      stopSpeaking();
+    }
+  }, [isVoiceModalOpen]);
 
   // Persist settings whenever changed
   useEffect(() => {
@@ -109,8 +125,12 @@ export default function App() {
     saveReminders(reminders);
   }, [reminders]);
 
-  // Update Welcome message when language changes
+  // Update Welcome message when language changes (skip initial mount to prevent double render)
   useEffect(() => {
+    if (isInitialMountLang.current) {
+      isInitialMountLang.current = false;
+      return;
+    }
     const isHindi = settings.language === 'hi';
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].id === 'welcome-msg') {
@@ -148,7 +168,7 @@ export default function App() {
   }, [settings.language]);
 
   // Settings update helpers
-  const handleUpdateSettings = (newSettings: Partial<SeniorSettings>) => {
+  const handleUpdateSettings = useCallback((newSettings: Partial<SeniorSettings>) => {
     setSettings((prev) => {
       const updated = { ...prev, ...newSettings };
       if (newSettings.soundEnabled === false) {
@@ -156,15 +176,15 @@ export default function App() {
       }
       return updated;
     });
-  };
+  }, []);
 
-  const handleToggleSound = (enabled: boolean) => {
+  const handleToggleSound = useCallback((enabled: boolean) => {
     if (!enabled) stopSpeaking();
     setSettings((prev) => ({ ...prev, soundEnabled: enabled }));
-  };
+  }, []);
 
   // Medicine quick actions
-  const handleMarkMedicineTaken = (id: string) => {
+  const handleMarkMedicineTaken = useCallback((id: string) => {
     setMedicines((prev) =>
       prev.map((m) => (m.id === id ? { ...m, status: 'taken', statusTimestamp: new Date().toLocaleTimeString() } : m))
     );
@@ -178,9 +198,9 @@ export default function App() {
         settings.voiceSpeed
       );
     }
-  };
+  }, [settings.soundEnabled, settings.language, settings.voiceSpeed]);
 
-  const handleMarkMedicineSkipped = (id: string) => {
+  const handleMarkMedicineSkipped = useCallback((id: string) => {
     setMedicines((prev) =>
       prev.map((m) => (m.id === id ? { ...m, status: 'skipped' } : m))
     );
@@ -194,23 +214,23 @@ export default function App() {
         settings.voiceSpeed
       );
     }
-  };
+  }, [settings.soundEnabled, settings.language, settings.voiceSpeed]);
 
   // Reminder actions
-  const handleToggleReminder = (id: string) => {
+  const handleToggleReminder = useCallback((id: string) => {
     setReminders((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, completed: !item.completed } : item
       )
     );
-  };
+  }, []);
 
-  const handleAddReminder = (newReminder: ReminderItem) => {
+  const handleAddReminder = useCallback((newReminder: ReminderItem) => {
     setReminders((prev) => [newReminder, ...prev]);
-  };
+  }, []);
 
   // Feature card router
-  const handleSelectFeature = (id: FeatureCardInfo['id']) => {
+  const handleSelectFeature = useCallback((id: FeatureCardInfo['id']) => {
     switch (id) {
       case 'doctor':
         setIsAppointmentOpen(true);
@@ -225,22 +245,27 @@ export default function App() {
         setIsDocExplainerOpen(true);
         break;
     }
-  };
+  }, []);
 
   // Chat message sending with centralized aiService & automatic connected action detection
-  const handleSendMessage = async (userText: string) => {
+  const handleSendMessage = useCallback(async (userText: string) => {
+    const trimmed = (userText || '').trim();
+    if (!trimmed || isSendingRef.current || isLoading) return;
+
+    isSendingRef.current = true;
+    setIsLoading(true);
+
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
-      text: userText,
+      text: trimmed,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
 
     // Contextual feature intent detection to link features directly for senior convenience
-    const lower = userText.toLowerCase();
+    const lower = trimmed.toLowerCase();
     let detectedAction: ChatMessage['actionLink'] = undefined;
 
     if (
@@ -306,7 +331,7 @@ export default function App() {
     }
 
     try {
-      const data = await aiService.sendChatMessage(userText, settings.language, 'general', {
+      const data = await aiService.sendChatMessage(trimmed, settings.language, 'general', {
         medicines,
         appointments,
         currentSection: 'Dashboard',
@@ -364,16 +389,17 @@ export default function App() {
       }
     } finally {
       setIsLoading(false);
+      isSendingRef.current = false;
     }
-  };
+  }, [isLoading, settings.language, settings.soundEnabled, settings.voiceSpeed, medicines, appointments]);
 
-  const handleSelectPrompt = (promptText: string) => {
+  const handleSelectPrompt = useCallback((promptText: string) => {
     setExternalInput(promptText);
     const element = document.getElementById('saathi-assistant-section');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, []);
 
   const handleResetAllDemo = () => {
     resetDemoData();
