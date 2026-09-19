@@ -15,12 +15,16 @@ import {
   ScamAnalysisResult,
   DocumentAnalysisResult,
   AppointmentPrepResult,
+  MedicineItem,
+  AppointmentItem,
+  ChatSource,
 } from '../types';
 import {
   validateScamInput,
   classifyMessageSafety,
   normalizeScamResult,
 } from '../utils/aiSafety';
+import { NETWORK_CONFIG, INPUT_LIMITS } from '../utils/constants';
 
 export interface ChatResponse {
   reply: string;
@@ -29,13 +33,13 @@ export interface ChatResponse {
   clarificationQuestion?: string;
   actionDisclaimer?: string;
   suggestedAction?: 'open_appointment' | 'open_medicine' | 'open_scam' | 'open_document';
-  source?: 'gemini' | 'local-companion' | 'fallback';
+  source?: ChatSource;
 }
 
-const DEFAULT_TIMEOUT_MS = 16000;
+const DEFAULT_TIMEOUT_MS = NETWORK_CONFIG.CLIENT_TIMEOUT_MS;
 
 // In-flight request deduplication map to prevent double clicks by seniors
-const inFlightRequests = new Map<string, Promise<any>>();
+const inFlightRequests = new Map<string, Promise<Response>>();
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
@@ -89,7 +93,7 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 1): P
 export function resolveLocalDirectAnswer(
   message: string,
   language: Language,
-  context?: { medicines?: any[]; appointments?: any[]; currentSection?: string }
+  context?: { medicines?: Partial<MedicineItem>[]; appointments?: Partial<AppointmentItem>[]; currentSection?: string }
 ): ChatResponse | null {
   const text = (message || '').trim().toLowerCase();
   const isHi = language === 'hi';
@@ -111,7 +115,7 @@ export function resolveLocalDirectAnswer(
 
   if (isMedicineScheduleQuery) {
     if (context?.medicines && context.medicines.length > 0) {
-      const pendingMed = context.medicines.find((m: any) => m.status === 'pending') || context.medicines[0];
+      const pendingMed = context.medicines.find((m) => m.status === 'pending') || context.medicines[0];
       if (pendingMed) {
         return {
           reply: isHi
@@ -325,8 +329,8 @@ export const aiService = {
     language: Language,
     mode = 'general',
     context?: {
-      medicines?: any[];
-      appointments?: any[];
+      medicines?: Partial<MedicineItem>[];
+      appointments?: Partial<AppointmentItem>[];
       currentSection?: string;
     }
   ): Promise<ChatResponse> {
@@ -349,7 +353,7 @@ export const aiService = {
       };
     }
 
-    const sanitized = raw.slice(0, 2000);
+    const sanitized = raw.slice(0, INPUT_LIMITS.CHAT_MESSAGE_MAX_CHARS);
 
     // Efficiency: Check if local application state can answer directly (e.g. medicine schedule, tomorrow's plan)
     const localAnswer = resolveLocalDirectAnswer(sanitized, language, context);
@@ -420,9 +424,10 @@ export const aiService = {
 
       const rawData = await response.json();
       return normalizeScamResult(rawData, language);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : '';
       // Re-throw user validation error so UI displays friendly validation message
-      if (err?.message && (err.message.includes('कृपया पहले') || err.message.includes('Please write or paste') || err.message.includes('बहुत लंबा') || err.message.includes('too long'))) {
+      if (errMsg && (errMsg.includes('कृपया पहले') || errMsg.includes('Please write or paste') || errMsg.includes('बहुत लंबा') || errMsg.includes('too long'))) {
         throw err;
       }
 

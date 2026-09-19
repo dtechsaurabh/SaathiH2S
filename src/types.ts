@@ -77,6 +77,8 @@ export interface FeatureCardInfo {
   }[];
 }
 
+export type ChatSource = 'gemini' | 'local-companion' | 'fallback' | 'safety-guardrail';
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'saathi';
@@ -86,7 +88,7 @@ export interface ChatMessage {
   clarificationQuestion?: string;
   actionDisclaimer?: string;
   timestamp: string;
-  source?: 'gemini' | 'local-companion' | 'fallback';
+  source?: ChatSource;
   actionLink?: {
     label: string;
     labelHi?: string;

@@ -2,6 +2,50 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, X, Sparkles, Volume2, ArrowRight } from 'lucide-react';
 import { FontSize, Language } from '../types';
 
+interface SpeechRecognitionResultItem {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: {
+    [index: number]: SpeechRecognitionResultItem;
+    length: number;
+    isFinal: boolean;
+  };
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message?: string;
+}
+
+interface BrowserSpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+
+interface WindowWithSpeech extends Window {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+}
+
 interface VoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,7 +64,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [speechSupported, setSpeechSupported] = useState(true);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -33,8 +77,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
     }
 
     // Check Speech Recognition support in browser
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = typeof window !== 'undefined' ? (window as unknown as WindowWithSpeech) : undefined;
+    const SpeechRecognition = win?.SpeechRecognition || win?.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       setSpeechSupported(false);
@@ -53,7 +97,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
       setIsListening(true);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let currentText = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         currentText += event.results[i][0].transcript;
@@ -61,7 +105,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
       setTranscript(currentText);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.warn('Speech recognition error:', event.error);
       setIsListening(false);
     };

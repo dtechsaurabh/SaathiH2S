@@ -55,7 +55,7 @@ describe('Evidence-Based Efficiency & Concurrency Verification Suite', () => {
             name: 'Metformin',
             dosage: '500mg',
             time: '08:00 AM',
-            status: 'pending',
+            status: 'pending' as const,
           },
         ],
       });

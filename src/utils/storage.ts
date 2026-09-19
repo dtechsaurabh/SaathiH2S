@@ -1,5 +1,6 @@
 import { SeniorSettings, MedicineItem, AppointmentItem, ReminderItem } from '../types';
 import { INITIAL_REMINDERS } from '../data/featureData';
+import { STORAGE_KEYS } from './constants';
 
 export const DEFAULT_SETTINGS: SeniorSettings = {
   fontSize: 'large',
@@ -97,10 +98,10 @@ export const INITIAL_DEMO_APPOINTMENTS: AppointmentItem[] = [
   },
 ];
 
-const SETTINGS_KEY = 'saathi_senior_settings_v2';
-const MEDICINES_KEY = 'saathi_medicines_v2';
-const APPOINTMENTS_KEY = 'saathi_appointments_v2';
-const REMINDERS_KEY = 'saathi_reminders_v2';
+const SETTINGS_KEY = STORAGE_KEYS.SETTINGS;
+const MEDICINES_KEY = STORAGE_KEYS.MEDICINES;
+const APPOINTMENTS_KEY = STORAGE_KEYS.APPOINTMENTS;
+const REMINDERS_KEY = STORAGE_KEYS.REMINDERS;
 
 // In-memory write cache to prevent redundant localStorage stringifications and I/O writes
 let lastSavedSettings = '';
@@ -142,8 +143,13 @@ export function loadMedicines(): MedicineItem[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
-        lastSavedMedicines = saved;
-        return parsed;
+        const valid = parsed.filter(
+          (m): m is MedicineItem => Boolean(m && typeof m === 'object' && typeof (m as MedicineItem).id === 'string' && typeof (m as MedicineItem).name === 'string')
+        );
+        if (valid.length > 0) {
+          lastSavedMedicines = saved;
+          return valid;
+        }
       }
     }
   } catch (e) {
@@ -169,8 +175,13 @@ export function loadAppointments(): AppointmentItem[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
-        lastSavedAppointments = saved;
-        return parsed;
+        const valid = parsed.filter(
+          (a): a is AppointmentItem => Boolean(a && typeof a === 'object' && typeof (a as AppointmentItem).id === 'string' && typeof (a as AppointmentItem).doctorOrService === 'string')
+        );
+        if (valid.length > 0) {
+          lastSavedAppointments = saved;
+          return valid;
+        }
       }
     }
   } catch (e) {
@@ -196,8 +207,13 @@ export function loadReminders(): ReminderItem[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
-        lastSavedReminders = saved;
-        return parsed;
+        const valid = parsed.filter(
+          (r): r is ReminderItem => Boolean(r && typeof r === 'object' && typeof (r as ReminderItem).id === 'string' && typeof (r as ReminderItem).title === 'string')
+        );
+        if (valid.length > 0) {
+          lastSavedReminders = saved;
+          return valid;
+        }
       }
     }
   } catch (e) {

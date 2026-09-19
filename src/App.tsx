@@ -346,7 +346,7 @@ export default function App() {
         clarificationQuestion: data.clarificationQuestion,
         actionDisclaimer: data.actionDisclaimer,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: data.source as any,
+        source: data.source,
         actionLink: detectedAction,
       };
 

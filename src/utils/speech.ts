@@ -3,6 +3,8 @@
  * Plays calm, clear audio in Hindi or English.
  */
 
+import { SPEECH_CONFIG } from './constants';
+
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let lastSpokenText = '';
 let lastSpokenTimestamp = 0;
@@ -32,7 +34,7 @@ export function speakText(
 
   // Throttle duplicate rapid clicks (within 300ms) with identical text
   const now = Date.now();
-  if (text === lastSpokenText && now - lastSpokenTimestamp < 300 && isSpeaking()) {
+  if (text === lastSpokenText && now - lastSpokenTimestamp < SPEECH_CONFIG.RAPID_CLICK_THROTTLE_MS && isSpeaking()) {
     return true;
   }
   lastSpokenText = text;
@@ -53,9 +55,9 @@ export function speakText(
     const utterance = new SpeechSynthesisUtterance(cleanedText);
     currentUtterance = utterance;
 
-    // Senior-friendly pacing: relaxed rate (0.75 for slow, 0.9 for normal)
-    utterance.rate = voiceSpeed === 'slow' ? 0.75 : 0.9;
-    utterance.pitch = 1.0;
+    // Senior-friendly pacing: relaxed rate
+    utterance.rate = voiceSpeed === 'slow' ? SPEECH_CONFIG.RATE_SLOW : SPEECH_CONFIG.RATE_NORMAL;
+    utterance.pitch = SPEECH_CONFIG.PITCH_DEFAULT;
 
     // Voice selection
     const voices = window.speechSynthesis.getVoices();

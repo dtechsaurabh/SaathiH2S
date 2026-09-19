@@ -1,4 +1,5 @@
 import { Language, ScamAnalysisResult, ScamRiskLevel } from '../types';
+import { HELPLINES, INPUT_LIMITS } from './constants';
 
 /**
  * 1. SCAM CHECKER INPUT VALIDATION
@@ -17,7 +18,7 @@ export function validateScamInput(
   }
 
   const trimmed = input.trim();
-  const MAX_LENGTH = 5000;
+  const MAX_LENGTH = INPUT_LIMITS.SCAM_TEXT_MAX_CHARS;
 
   if (trimmed.length > MAX_LENGTH) {
     const error =
@@ -220,11 +221,12 @@ export function classifyMessageSafety(
  * - Safety wording: "This message contains signs commonly associated with scams"
  * - 1930 Cyber helpline presented as official help/reporting resource
  */
-export function normalizeScamResult(raw: any, language: Language = 'hi'): ScamAnalysisResult {
+export function normalizeScamResult(raw: unknown, language: Language = 'hi'): ScamAnalysisResult {
   const isHi = language === 'hi';
+  const rawObj = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : null;
 
   // Normalize risk level
-  let rawLevel = String(raw?.riskLevel || raw?.risk || '').trim().toUpperCase();
+  let rawLevel = String(rawObj?.riskLevel || rawObj?.risk || '').trim().toUpperCase();
   let riskLevel: ScamRiskLevel = 'UNKNOWN / NEEDS REVIEW';
 
   if (rawLevel.includes('HIGH') || rawLevel === 'HIGH RISK' || rawLevel === 'उच्च') {
@@ -259,10 +261,10 @@ export function normalizeScamResult(raw: any, language: Language = 'hi'): ScamAn
 
   // Warning Signs
   let warningSigns: string[] = [];
-  if (Array.isArray(raw?.warningSigns) && raw.warningSigns.length > 0) {
-    warningSigns = raw.warningSigns.map((s: any) => String(s).trim()).filter(Boolean);
-  } else if (typeof raw?.warningSigns === 'string' && raw.warningSigns.trim()) {
-    warningSigns = [raw.warningSigns.trim()];
+  if (Array.isArray(rawObj?.warningSigns) && rawObj.warningSigns.length > 0) {
+    warningSigns = rawObj.warningSigns.map((s: unknown) => String(s).trim()).filter(Boolean);
+  } else if (typeof rawObj?.warningSigns === 'string' && rawObj.warningSigns.trim()) {
+    warningSigns = [rawObj.warningSigns.trim()];
   }
 
   if (warningSigns.length === 0) {
@@ -303,10 +305,10 @@ export function normalizeScamResult(raw: any, language: Language = 'hi'): ScamAn
 
   // Safe Actions
   let safeActions: string[] = [];
-  const rawActions = raw?.recommendedActions || raw?.safeAction || raw?.actions;
+  const rawActions = rawObj?.recommendedActions || rawObj?.safeAction || rawObj?.actions;
   if (Array.isArray(rawActions) && rawActions.length > 0) {
     safeActions = rawActions
-      .map((a: any) => String(a).trim())
+      .map((a: unknown) => String(a).trim())
       .filter((a) => {
         if (!a) return false;
         // Strip any adversarial suggestion that advises revealing credentials unless explicitly negative
@@ -339,7 +341,7 @@ export function normalizeScamResult(raw: any, language: Language = 'hi'): ScamAn
   }
 
   // Simple Explanation
-  let explanation = String(raw?.simpleExplanation || raw?.explanation || '').trim();
+  let explanation = String(rawObj?.simpleExplanation || rawObj?.explanation || '').trim();
   if (!explanation) {
     if (riskLevel === 'HIGH RISK') {
       explanation = isHi
@@ -378,7 +380,7 @@ export function normalizeScamResult(raw: any, language: Language = 'hi'): ScamAn
     safeAction: safeActions,
     disclaimer,
     helpline,
-    cyberHelpline: '1930',
+    cyberHelpline: HELPLINES.CYBER_CRIME,
   };
 }
 

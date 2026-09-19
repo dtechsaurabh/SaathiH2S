@@ -19,7 +19,7 @@ describe('AI Service Hardening & Resilience Suite', () => {
           dosage: '1 गोली',
           time: '08:00 AM',
           instructionsHi: 'नाश्ते के बाद गुनगुने पानी से',
-          status: 'pending',
+          status: 'pending' as const,
         },
       ];
 
@@ -44,7 +44,7 @@ describe('AI Service Hardening & Resilience Suite', () => {
           dosage: '1 tablet',
           time: '01:30 PM',
           instructions: 'After lunch with water',
-          status: 'pending',
+          status: 'pending' as const,
         },
       ];
 
@@ -69,7 +69,7 @@ describe('AI Service Hardening & Resilience Suite', () => {
           date: 'कल (Tomorrow)',
           time: '11:00 AM',
           location: 'Max Healthcare, Saket',
-          status: 'upcoming',
+          status: 'upcoming' as const,
         },
       ];
 
