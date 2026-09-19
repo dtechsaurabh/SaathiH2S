@@ -344,6 +344,7 @@ export const aiService = {
     if (!safety.isAllowed && safety.safeResponse) {
       return {
         reply: safety.safeResponse,
+        suggestedAction: safety.status === 'medical_unsafe' ? 'open_appointment' : undefined,
         source: 'local-companion',
       };
     }

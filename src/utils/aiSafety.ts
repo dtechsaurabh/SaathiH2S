@@ -31,10 +31,28 @@ export function validateScamInput(
 }
 
 /**
+ * Strips ASCII control characters, trims whitespace, and limits length.
+ */
+export function sanitizeSafeText(input: unknown, maxLen = 2000): string {
+  if (typeof input !== 'string') return '';
+  return input
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .trim()
+    .slice(0, maxLen);
+}
+
+/**
  * 2. CHAT / AI INPUT SAFETY GUARDRAIL
  * Detects abusive, threatening, harmful, or frustrated messages.
  */
-export type SafetyClassification = 'safe' | 'frustrated' | 'abusive' | 'harmful';
+export type SafetyClassification =
+  | 'safe'
+  | 'frustrated'
+  | 'abusive'
+  | 'harmful'
+  | 'prompt_injection'
+  | 'medical_unsafe'
+  | 'credential_risk';
 
 export interface SafetyCheckResult {
   status: SafetyClassification;
@@ -73,7 +91,67 @@ export function classifyMessageSafety(
     }
   }
 
-  // 2. Abusive / Toxic / Sexually Explicit Input Detection
+  // 2. Prompt Injection, Jailbreak, System Prompt & Secret Extraction Attempts
+  const promptInjectionPatterns = [
+    /\b(ignore|disregard|forget)\s+(all\s+)?(previous\s+|prior\s+|above\s+)?(instructions|prompts|rules)\b/i,
+    /\b(system\s+prompt|developer\s+mode|jailbreak|dan\s+mode|bypass\s+safety)\b/i,
+    /\b(reveal|show|tell|display|what\s+is)\b.*?\b((gemini[_\s-]*)?api[_\s-]*key|system\s*prompt|secret|credential|token|hidden\s*instruction|env)\b/i,
+    /\b((gemini[_\s-]*)?api[_\s-]*key)\b/i,
+    /(सिस्टम\s*प्रॉम्प्ट|पिछली\s*हिदायतें\s*(भूल|मानो)|गुप्त\s*कोड|एपीआई\s*की)/iu,
+  ];
+
+  for (const pattern of promptInjectionPatterns) {
+    if (pattern.test(text)) {
+      return {
+        status: 'prompt_injection',
+        isAllowed: false,
+        safeResponse: isHi
+          ? 'मैं आपका सहायक साथी (Saathi) हूँ। मैं केवल वरिष्ठ नागरिकों की दैनिक दिनचर्या, दवाइयों की याद और सुरक्षित मार्गदर्शन में सहायता करता हूँ। सिस्टम निर्देशों या आंतरिक कुंजियों को साझा करना संभव नहीं है। मैं आपकी किस प्रकार सहायता करूँ?'
+          : 'I am your companion Saathi. I am designed specifically to assist seniors with daily routines, medicine reminders, and gentle guidance. I do not share internal prompts, system configurations, or keys. How may I assist you with your day?',
+      };
+    }
+  }
+
+  // 3. Unsafe Medical Advice / Dosage Manipulation / Unlicensed Treatment Queries
+  const medicalUnsafePatterns = [
+    /\b(give\s+me\s+a\s+dosage|prescribe\s+(me\s+)?a\s+(medicine|drug)|change\s+my\s+dosage|stop\s+taking\s+(my\s+)?(medicine|pills)|what\s+dose\s+should\s+i\s+take|pretend\s+you\s+are\s+a\s+doctor|diagnose\s+(my\s+condition|me))\b/i,
+    /\b(can\s+i\s+(increase|decrease)\s+my\s+dose|should\s+i\s+stop\s+taking\s+(amlodipine|metformin|atorvastatin))\b/i,
+    /(खुराक\s*(बदल|बता|लिख|बढ़ा|घटा)|दवा\s*बंद\s*कर|मुझे\s*दवा\s*लिख|डॉक्टर\s*बनकर\s*बता|मेरी\s*बीमारी\s*का\s*इलाज|(दवा|गोली)\s*की\s*खुराक)/iu,
+  ];
+
+  for (const pattern of medicalUnsafePatterns) {
+    if (pattern.test(text)) {
+      return {
+        status: 'medical_unsafe',
+        isAllowed: false,
+        safeResponse: isHi
+          ? 'आपकी सुरक्षा सबसे पहले है। साथी आपकी दिनचर्या और याददाश्त में सहायता के लिए है। किसी भी बीमारी का निदान, दवा की खुराक बदलने या नया इलाज शुरू करने के लिए कृपया केवल अपने योग्य डॉक्टर (Physician) से प्रत्यक्ष परामर्श लें। बिना डॉक्टर की सलाह के दवा कभी न बदलें।'
+          : 'Your safety is our top priority. Saathi is designed to assist with daily routines and reminders. For any medical diagnosis, changing medication dosages, or starting new treatments, please always consult your qualified doctor or physician directly. Never change prescribed doses without medical advice.',
+      };
+    }
+  }
+
+  // 4. Credential / Sensitive Personal Data Phishing Detection
+  const credentialRiskPatterns = [
+    /\b(send|share|give|enter|tell)\b.*?\b(otp|pin|password|cvv|netbanking|bank\s*account)\b/i,
+    /\b(my\s+(atm\s+)?(pin|password|otp)\s+is)\b/i,
+    /\b(netbanking\s+password|share\s+your\s+netbanking)\b/i,
+    /(मेरा\s*(ओटीपी|पिन|पासवर्ड)|(ओटीपी|पिन|पासवर्ड)\s*है|खाता\s*संख्या\s*मांग|ओटीपी\s*मांग)/iu,
+  ];
+
+  for (const pattern of credentialRiskPatterns) {
+    if (pattern.test(text)) {
+      return {
+        status: 'credential_risk',
+        isAllowed: false,
+        safeResponse: isHi
+          ? 'सुरक्षा चेतावनी: कृपया अपना OTP, बैंक पिन, पासवर्ड या गोपनीय वित्तीय जानकारी कभी किसी के साथ साझा न करें। साथी आपसे कभी भी कोई गोपनीय पासवर्ड या बैंक विवरण नहीं मांगता।'
+          : 'Security Alert: Please never share your OTP, banking PIN, passwords, or confidential financial details. Saathi will never ask for your private passwords or banking credentials.',
+      };
+    }
+  }
+
+  // 5. Abusive / Toxic / Sexually Explicit Input Detection
   // Strictly targeting abusive vitriol, slurs, profanity, and explicit sexual abuse.
   // Note: Normal Hindi words like "pareshan", "gussa", "kutta" (dog), etc. in innocent context are NOT blocked.
   const abusivePatterns = [
@@ -95,7 +173,7 @@ export function classifyMessageSafety(
     }
   }
 
-  // 3. Frustrated but Non-Threatening Input Detection
+  // 6. Frustrated but Non-Threatening Input Detection
   // When an elder is venting frustration (e.g., bank troubles, confusing tech, annoyance),
   // we do NOT block them; we classify as 'frustrated' and remain calm and helpful.
   const frustrationKeywords = [
@@ -227,7 +305,19 @@ export function normalizeScamResult(raw: any, language: Language = 'hi'): ScamAn
   let safeActions: string[] = [];
   const rawActions = raw?.recommendedActions || raw?.safeAction || raw?.actions;
   if (Array.isArray(rawActions) && rawActions.length > 0) {
-    safeActions = rawActions.map((a: any) => String(a).trim()).filter(Boolean);
+    safeActions = rawActions
+      .map((a: any) => String(a).trim())
+      .filter((a) => {
+        if (!a) return false;
+        // Strip any adversarial suggestion that advises revealing credentials unless explicitly negative
+        const lower = a.toLowerCase();
+        const unsafePrompt =
+          (/\b(enter|provide|send|share|submit|give)\b.*?\b(otp|pin|password|cvv|account\s*number|netbanking)\b/i.test(lower) &&
+            !/\b(never|do not|don't|avoid|refrain)\b/i.test(lower)) ||
+          (/(ओटीपी|पिन|पासवर्ड|खाता)\s*(दर्ज\s*करें|भेजें|दें|साझा\s*करें)/iu.test(lower) &&
+            !/(न\s*दें|कभी\s*न|मत|बिल्कुल\s*न)/iu.test(lower));
+        return !unsafePrompt;
+      });
   } else if (typeof rawActions === 'string' && rawActions.trim()) {
     safeActions = [rawActions.trim()];
   }
