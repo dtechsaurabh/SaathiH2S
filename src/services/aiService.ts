@@ -189,6 +189,74 @@ export function resolveLocalDirectAnswer(
     };
   }
 
+  // 4. Questions to ask doctor: "मुझे डॉक्टर के लिए क्या पूछना चाहिए?", "what should i ask the doctor", "questions to ask doctor"
+  const isQuestionsForDoctorQuery =
+    text.includes('डॉक्टर के लिए क्या पूछना') ||
+    text.includes('डॉक्टर से क्या पूछें') ||
+    text.includes('kya poochna chahiye') ||
+    text.includes('kya puchna') ||
+    text.includes('what should i ask') ||
+    text.includes('questions to ask doctor') ||
+    text.includes('doctor se kya pooche');
+
+  if (isQuestionsForDoctorQuery) {
+    return {
+      reply: isHi
+        ? 'डॉक्टर से मिलने पर आप ये ज़रूरी और सहज सवाल पूछ सकते हैं:'
+        : 'Here are important, comfortable questions you can ask your doctor during your visit:',
+      steps: isHi
+        ? [
+            '1. डॉक्टर साहब, क्या मेरी वर्तमान दवाइयाँ और खुराक मेरी रिपोर्ट्स के अनुसार सही चल रही हैं?',
+            '2. क्या इन दवाइयों को भोजन से पहले लेना है या बाद में, और यदि कोई खुराक छूट जाए तो क्या करें?',
+            '3. क्या मुझे खाने-पीने, नमक या टहलने में कोई खास सावधानी रखनी है?',
+            '4. अगली बार मुझे कब दोबारा चेकअप के लिए आना चाहिए?',
+          ]
+        : [
+            '1. Doctor, are my current medicines and doses working well with my latest reports?',
+            '2. Should I take these before or after meals, and what should I do if I accidentally miss a dose?',
+            '3. Are there any diet, salt, or physical precautions I need to observe?',
+            '4. When should I return for my next follow-up checkup?',
+          ],
+      suggestedAction: 'open_appointment',
+      source: 'local-companion',
+    };
+  }
+
+  // 5. Critical Medical Safety Guardrail: Direct treatment / dosage alteration / diagnosis queries
+  // Saathi must NEVER invent treatment instructions, diagnoses, or dosage changes.
+  const isMedicalTreatmentOrDosageQuery =
+    text.includes('खुराक बदल') ||
+    text.includes('dosage change') ||
+    text.includes('change dosage') ||
+    text.includes('increase dose') ||
+    text.includes('decrease dose') ||
+    text.includes('कौन सी दवा लूँ') ||
+    text.includes('kaun si dawa') ||
+    text.includes('what medicine should i take') ||
+    text.includes('diagnose my') ||
+    text.includes('क्या बीमारी है');
+
+  if (isMedicalTreatmentOrDosageQuery) {
+    return {
+      reply: isHi
+        ? 'आपकी सुरक्षा सबसे पहले है। साथी आपकी दिनचर्या और याददाश्त में सहायता के लिए है। किसी भी बीमारी का निदान, दवा की खुराक बदलने या नया इलाज शुरू करने के लिए कृपया केवल अपने योग्य डॉक्टर (Physician) से प्रत्यक्ष परामर्श लें।'
+        : 'Your safety is our top priority. Saathi is designed to assist with daily routines and reminders. For any medical diagnosis, changing medication dosages, or starting new treatments, please always consult your qualified doctor or physician directly.',
+      steps: isHi
+        ? [
+            'अपनी पुरानी पर्ची और वर्तमान दवाइयाँ लेकर डॉक्टर से मिलें।',
+            'बिना डॉक्टर की सलाह के अपनी दवा की खुराक कभी कम या ज्यादा न करें।',
+            'अपॉइंटमेंट की तैयारी और पर्ची संभालने के लिए साथी का उपयोग करें।',
+          ]
+        : [
+            'Consult your certified physician with your current prescription.',
+            'Never increase, decrease, or stop prescription medicines without medical advice.',
+            'Use Saathi to prepare your questions and keep your visit checklist ready.',
+          ],
+      suggestedAction: 'open_appointment',
+      source: 'local-companion',
+    };
+  }
+
   return null;
 }
 

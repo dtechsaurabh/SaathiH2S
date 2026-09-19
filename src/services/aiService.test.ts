@@ -98,6 +98,97 @@ describe('AI Service Hardening & Resilience Suite', () => {
       expect(result.steps?.length).toBeGreaterThan(0);
       expect(result.suggestedAction).toBe('open_appointment');
     });
+
+    it('answers "मुझे डॉक्टर के लिए क्या पूछना चाहिए?" locally with 4 safe questions without network call', async () => {
+      const result = await aiService.sendChatMessage(
+        'मुझे डॉक्टर के लिए क्या पूछना चाहिए?',
+        'hi',
+        'general'
+      );
+
+      expect(result.source).toBe('local-companion');
+      expect(result.reply).toContain('डॉक्टर से मिलने पर आप ये ज़रूरी और सहज सवाल पूछ सकते हैं');
+      expect(result.steps?.length).toBe(4);
+      expect(result.suggestedAction).toBe('open_appointment');
+    });
+
+    it('answers "what should i ask the doctor?" in English locally without calling Gemini', async () => {
+      const result = await aiService.sendChatMessage(
+        'what should i ask the doctor?',
+        'en',
+        'general'
+      );
+
+      expect(result.source).toBe('local-companion');
+      expect(result.reply).toContain('important, comfortable questions you can ask your doctor');
+      expect(result.steps?.length).toBe(4);
+      expect(result.suggestedAction).toBe('open_appointment');
+    });
+
+    it('handles medical treatment / dosage modification safely by advising doctor consultation', async () => {
+      const result = await aiService.sendChatMessage(
+        'क्या मैं दवा की खुराक बदल सकता हूँ?',
+        'hi',
+        'general'
+      );
+
+      expect(result.source).toBe('local-companion');
+      expect(result.reply).toContain('डॉक्टर (Physician) से प्रत्यक्ष परामर्श लें');
+      expect(result.suggestedAction).toBe('open_appointment');
+    });
+  });
+
+  describe('Chat Input Validation & Safety Guardrails', () => {
+    it('rejects empty and whitespace-only chat messages with clear error', async () => {
+      await expect(aiService.sendChatMessage('', 'hi')).rejects.toThrow('कृपया अपनी बात');
+      await expect(aiService.sendChatMessage('   ', 'en')).rejects.toThrow('Please share your message');
+    });
+
+    it('safely handles very long chat input by truncating without crashing', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          reply: 'Long query received safely',
+          source: 'gemini',
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const veryLong = 'अ'.repeat(5000);
+      const res = await aiService.sendChatMessage(veryLong, 'hi');
+      expect(res.reply).toBe('Long query received safely');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      // Verify sanitized body payload length is capped
+      const calledBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(calledBody.message.length).toBeLessThanOrEqual(2000);
+    });
+
+    it('deduplicates identical concurrent in-flight requests', async () => {
+      let resolveFetch: any;
+      const fetchMock = vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveFetch = () =>
+              resolve({
+                ok: true,
+                json: async () => ({ reply: 'Deduplicated answer', source: 'gemini' }),
+              });
+          })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      // Fire two identical requests simultaneously
+      const req1 = aiService.sendChatMessage('Same query test', 'en');
+      const req2 = aiService.sendChatMessage('Same query test', 'en');
+
+      resolveFetch();
+      const [res1, res2] = await Promise.all([req1, req2]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(res1.reply).toBe('Deduplicated answer');
+      expect(res2.reply).toBe('Deduplicated answer');
+    });
   });
 
   describe('Chat API Endpoint Integration & Error Recovery', () => {
