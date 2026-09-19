@@ -74,7 +74,7 @@ export function classifyMessageSafety(
 
   // 1. Harmful / Severe Threat Detection (Self-harm, suicide, violence, weapons, killing)
   const harmfulPatterns = [
-    /\b(suicide|kill myself|end my life|want to die|hang myself|poison myself)\b/i,
+    /\b(suicide|kill myself|end my life|end it all|want to die|hang myself|poison myself)\b/i,
     /(आत्महत्या|जान दे दूंगा|फांसी|मरना चाहता|खुदकुशी|ज़हर खा लूंगा)/iu,
     /\b(bomb\s+(making|blast|attack)|kill\s+(someone|them|people)|terrorist|assassinate)\b/i,
     /(बम\s+विस्फोट|हत्या\s+कर|मार\s+डालूंगा|आतंकवादी)/iu,

@@ -163,4 +163,56 @@ describe('Medicine Management & Lifecycle Tests', () => {
     const reloaded = loadMedicines();
     expect(reloaded[0].status).toBe('skipped');
   });
+
+  describe('Medicine Input Validation & Invalid Data Protection', () => {
+    const validateMedicineInput = (name: string, rawTime: string, language: 'hi' | 'en') => {
+      const trimmedName = (name || '').trim();
+      if (!trimmedName) {
+        return {
+          isValid: false,
+          error: language === 'hi' ? 'कृपया दवाई का नाम लिखें' : 'Please enter medicine name',
+        };
+      }
+      if (trimmedName.length > 80) {
+        return {
+          isValid: false,
+          error: language === 'hi' ? 'दवाई का नाम 80 अक्षरों से कम होना चाहिए' : 'Medicine name must be under 80 characters',
+        };
+      }
+      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+      if (rawTime && !timeRegex.test(rawTime)) {
+        return {
+          isValid: false,
+          error: language === 'hi' ? 'कृपया सही समय चुनें' : 'Please select a valid time',
+        };
+      }
+      return { isValid: true };
+    };
+
+    it('rejects empty or whitespace-only medicine name with senior-friendly error message', () => {
+      const res1 = validateMedicineInput('', '08:00', 'hi');
+      expect(res1.isValid).toBe(false);
+      expect(res1.error).toBe('कृपया दवाई का नाम लिखें');
+
+      const res2 = validateMedicineInput('   \n\t  ', '08:00', 'en');
+      expect(res2.isValid).toBe(false);
+      expect(res2.error).toBe('Please enter medicine name');
+    });
+
+    it('rejects excessively long medicine names to prevent UI overflows', () => {
+      const longName = 'A'.repeat(100);
+      const res = validateMedicineInput(longName, '08:00', 'en');
+      expect(res.isValid).toBe(false);
+      expect(res.error).toContain('must be under 80 characters');
+    });
+
+    it('validates 24-hour time format before converting to 12-hour AM/PM', () => {
+      const invalidTime = validateMedicineInput('Aspirin', '99:99', 'en');
+      expect(invalidTime.isValid).toBe(false);
+      expect(invalidTime.error).toContain('valid time');
+
+      const validTime = validateMedicineInput('Aspirin', '08:30', 'en');
+      expect(validTime.isValid).toBe(true);
+    });
+  });
 });

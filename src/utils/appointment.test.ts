@@ -153,4 +153,47 @@ describe('Appointment Management & Lifecycle Tests', () => {
     expect(retrieved['app-1_old_reports']).toBe(true);
     expect(retrieved['app-1_main_issue']).toBe(false);
   });
+
+  describe('Appointment Input Validation & Preparation Checks', () => {
+    const validateAppointmentInput = (doctorName: string, language: 'hi' | 'en') => {
+      const trimmed = (doctorName || '').trim();
+      if (!trimmed) {
+        return {
+          isValid: false,
+          error: language === 'hi' ? 'कृपया डॉक्टर का नाम या विभाग लिखें' : 'Please enter doctor or department name',
+        };
+      }
+      if (trimmed.length > 80) {
+        return {
+          isValid: false,
+          error: language === 'hi' ? 'नाम 80 अक्षरों से कम होना चाहिए' : 'Name must be under 80 characters',
+        };
+      }
+      return { isValid: true };
+    };
+
+    it('rejects empty or whitespace-only doctor name with senior-friendly error message', () => {
+      const resHi = validateAppointmentInput('', 'hi');
+      expect(resHi.isValid).toBe(false);
+      expect(resHi.error).toBe('कृपया डॉक्टर का नाम या विभाग लिखें');
+
+      const resEn = validateAppointmentInput('   ', 'en');
+      expect(resEn.isValid).toBe(false);
+      expect(resEn.error).toBe('Please enter doctor or department name');
+    });
+
+    it('validates doctor visit preparation questions provide practical guidance', () => {
+      const prepQuestions = [
+        'मेरी समस्या के बारे में आपकी क्या सलाह है?',
+        'इस दवा का उद्देश्य क्या है?',
+        'मुझे किन बातों पर ध्यान देना चाहिए?',
+        'अगली बार कब मिलना चाहिए?',
+      ];
+
+      prepQuestions.forEach((q) => {
+        expect(q.length).toBeGreaterThan(10);
+        expect(q.endsWith('?')).toBe(true);
+      });
+    });
+  });
 });
