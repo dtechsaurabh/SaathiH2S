@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   X,
   Pill,
@@ -35,6 +35,7 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
   onResetDemo,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   // Form state with native inputs
   const todayDefault = new Date().toISOString().split('T')[0];
@@ -93,40 +94,46 @@ export const MedicineTrackerModal: React.FC<MedicineTrackerModalProps> = ({
 
   const handleAddMedicine = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
     if (!name.trim()) {
       setFormError(isHindi ? 'कृपया दवाई का नाम लिखें' : 'Please enter medicine name');
       return;
     }
 
-    const formatted12 = convert24To12Hour(rawTime);
-    const calculatedSlot = deriveTimeSlot(rawTime);
+    isSubmittingRef.current = true;
+    try {
+      const formatted12 = convert24To12Hour(rawTime);
+      const calculatedSlot = deriveTimeSlot(rawTime);
 
-    const newMed: MedicineItem = {
-      id: `med-${Date.now()}`,
-      name: name.trim(),
-      dosage: dosage.trim() || (isHindi ? '1 गोली' : '1 Tablet'),
-      time: formatted12,
-      rawTime: rawTime,
-      startDate: startDate,
-      timeSlot: timeSlot || calculatedSlot,
-      frequency,
-      frequencyHi: frequency,
-      status: 'pending',
-      instructions,
-      instructionsHi: instructions,
-      isDemo: false,
-    };
+      const newMed: MedicineItem = {
+        id: `med-${Date.now()}`,
+        name: name.trim(),
+        dosage: dosage.trim() || (isHindi ? '1 गोली' : '1 Tablet'),
+        time: formatted12,
+        rawTime: rawTime,
+        startDate: startDate,
+        timeSlot: timeSlot || calculatedSlot,
+        frequency,
+        frequencyHi: frequency,
+        status: 'pending',
+        instructions,
+        instructionsHi: instructions,
+        isDemo: false,
+      };
 
-    onUpdateMedicines([...medicines, newMed]);
-    setName('');
-    setShowAddForm(false);
-    setFormError(null);
+      onUpdateMedicines([...medicines, newMed]);
+      setName('');
+      setShowAddForm(false);
+      setFormError(null);
 
-    if (soundEnabled) {
-      speakText(
-        isHindi ? `नई दवाई ${newMed.name} जोड़ दी गई है।` : `New medicine ${newMed.name} added.`,
-        language
-      );
+      if (soundEnabled) {
+        speakText(
+          isHindi ? `नई दवाई ${newMed.name} जोड़ दी गई है।` : `New medicine ${newMed.name} added.`,
+          language
+        );
+      }
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

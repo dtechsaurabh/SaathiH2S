@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Calendar,
@@ -51,6 +51,28 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [prepError, setPrepError] = useState<string | null>(null);
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
   const [deleteConfirmAppId, setDeleteConfirmAppId] = useState<string | null>(null);
+  const notificationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSubmittingRef = useRef(false);
+
+  // Clean up any pending notification timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showNotification = (msg: string, durationMs = 3000) => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current);
+    }
+    setNotificationMsg(msg);
+    notificationTimerRef.current = setTimeout(() => {
+      setNotificationMsg(null);
+      notificationTimerRef.current = null;
+    }, durationMs);
+  };
 
   // Form fields
   const [doctorName, setDoctorName] = useState('');
@@ -100,8 +122,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     const msg = isHindi
       ? `${app ? app.doctorOrService : 'Appointment'} हटा दी गई है।`
       : 'Appointment removed.';
-    setNotificationMsg(msg);
-    setTimeout(() => setNotificationMsg(null), 3000);
+    showNotification(msg, 3000);
   };
 
   const handleSetReminder = (app: AppointmentItem) => {
@@ -128,8 +149,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     const msg = isHindi
       ? `✅ ${app.doctorOrService} के लिए Reminder सेट कर दिया गया है!`
       : `✅ Reminder set for ${app.doctorOrService}!`;
-    setNotificationMsg(msg);
-    setTimeout(() => setNotificationMsg(null), 4000);
+    showNotification(msg, 4000);
 
     if (soundEnabled) {
       speakText(msg, language);
@@ -181,54 +201,58 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
     if (!doctorName.trim()) {
       setFormError(isHindi ? 'कृपया डॉक्टर का नाम लिखें' : 'Please enter doctor or clinic name');
       return;
     }
 
-    if (editingAppId) {
-      const updated = appointments.map((a) => {
-        if (a.id === editingAppId) {
-          return {
-            ...a,
-            doctorOrService: doctorName.trim(),
-            specialty: specialty.trim() || 'General Physician',
-            date: date.trim() || 'Upcoming',
-            time: time.trim() || '10:00 AM',
-            location: location.trim() || 'Clinic OPD',
-            notes: notes.trim(),
-          };
-        }
-        return a;
-      });
-      onUpdateAppointments(updated);
-      const msg = isHindi ? 'अपॉइंटमेंट अपडेट कर दी गई है।' : 'Appointment updated.';
-      setNotificationMsg(msg);
-      setTimeout(() => setNotificationMsg(null), 3000);
-      if (soundEnabled) speakText(msg, language);
-    } else {
-      const newApp: AppointmentItem = {
-        id: `app-${Date.now()}`,
-        doctorOrService: doctorName.trim(),
-        specialty: specialty.trim() || 'General Physician',
-        date: date.trim() || 'कल',
-        time: time.trim() || '11:00 AM',
-        location: location.trim() || 'Clinic OPD',
-        notes: notes.trim(),
-        status: 'upcoming',
-        isDemo: false,
-      };
+    isSubmittingRef.current = true;
+    try {
+      if (editingAppId) {
+        const updated = appointments.map((a) => {
+          if (a.id === editingAppId) {
+            return {
+              ...a,
+              doctorOrService: doctorName.trim(),
+              specialty: specialty.trim() || 'General Physician',
+              date: date.trim() || 'Upcoming',
+              time: time.trim() || '10:00 AM',
+              location: location.trim() || 'Clinic OPD',
+              notes: notes.trim(),
+            };
+          }
+          return a;
+        });
+        onUpdateAppointments(updated);
+        const msg = isHindi ? 'अपॉइंटमेंट अपडेट कर दी गई है।' : 'Appointment updated.';
+        showNotification(msg, 3000);
+        if (soundEnabled) speakText(msg, language);
+      } else {
+        const newApp: AppointmentItem = {
+          id: `app-${Date.now()}`,
+          doctorOrService: doctorName.trim(),
+          specialty: specialty.trim() || 'General Physician',
+          date: date.trim() || 'कल',
+          time: time.trim() || '11:00 AM',
+          location: location.trim() || 'Clinic OPD',
+          notes: notes.trim(),
+          status: 'upcoming',
+          isDemo: false,
+        };
 
-      onUpdateAppointments([...appointments, newApp]);
-      const msg = isHindi
-        ? `${newApp.doctorOrService} के लिए अपॉइंटमेंट जोड़ दी गई है।`
-        : `Appointment with ${newApp.doctorOrService} added.`;
-      setNotificationMsg(msg);
-      setTimeout(() => setNotificationMsg(null), 3000);
-      if (soundEnabled) speakText(msg, language);
+        onUpdateAppointments([...appointments, newApp]);
+        const msg = isHindi
+          ? `${newApp.doctorOrService} के लिए अपॉइंटमेंट जोड़ दी गई है।`
+          : `Appointment with ${newApp.doctorOrService} added.`;
+        showNotification(msg, 3000);
+        if (soundEnabled) speakText(msg, language);
+      }
+
+      resetForm();
+    } finally {
+      isSubmittingRef.current = false;
     }
-
-    resetForm();
   };
 
   return (
